@@ -1,10 +1,10 @@
-const { app, BrowserWindow, BrowserView, ipcMain, shell, globalShortcut } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, shell, globalShortcut, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
 const Store = require('electron-store');
 const { scanPort, scanCommonPorts } = require('./services/port-scanner');
-const { startService, stopService, getRunningServices } = require('./services/process-manager');
+const { startService, stopService, getRunningServices, sendTerminalInput } = require('./services/process-manager');
 
 const store = new Store();
 
@@ -12,6 +12,11 @@ let mainWindow;
 let currentBrowserView = null;
 
 function registerGlobalShortcuts() {
+  // 只在窗口有焦点时注册全局快捷键
+  if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isFocused()) {
+    return;
+  }
+
   globalShortcut.unregisterAll();
 
   const shortcuts = [
@@ -27,7 +32,7 @@ function registerGlobalShortcuts() {
 
   shortcuts.forEach(({ accelerator, action }) => {
     const success = globalShortcut.register(accelerator, () => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) {
         mainWindow.webContents.send('global-shortcut', action);
       }
     });
@@ -36,6 +41,10 @@ function registerGlobalShortcuts() {
       console.warn(`Failed to register shortcut: ${accelerator}`);
     }
   });
+}
+
+function unregisterGlobalShortcuts() {
+  globalShortcut.unregisterAll();
 }
 
 // 开发环境热重载
@@ -91,7 +100,18 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  // 窗口获得焦点时注册快捷键
+  mainWindow.on('focus', () => {
+    registerGlobalShortcuts();
+  });
+
+  // 窗口失去焦点时取消注册快捷键，释放给其他应用
+  mainWindow.on('blur', () => {
+    unregisterGlobalShortcuts();
+  });
+
   mainWindow.on('closed', () => {
+    unregisterGlobalShortcuts();
     mainWindow = null;
   });
 }
@@ -147,6 +167,10 @@ ipcMain.handle('get-running-services', async () => {
   return getRunningServices();
 });
 
+ipcMain.handle('send-terminal-input', async (event, pid, input) => {
+  return sendTerminalInput(pid, input);
+});
+
 ipcMain.handle('get-local-ips', async () => {
   const interfaces = os.networkInterfaces();
   const ips = ['localhost', '127.0.0.1'];
@@ -190,6 +214,23 @@ ipcMain.handle('open-folder', async (event, folderPath) => {
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('select-folder', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: '选择项目文件夹'
+    });
+    
+    if (result.canceled) {
+      return null;
+    }
+    
+    return result.filePaths[0] || null;
+  } catch (error) {
+    return null;
   }
 });
 

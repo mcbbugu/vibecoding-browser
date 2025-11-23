@@ -29,6 +29,11 @@ export const electronAPI = {
     return window.electronAPI.getRunningServices();
   },
 
+  sendTerminalInput: (pid, input) => {
+    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
+    return window.electronAPI.sendTerminalInput(pid, input);
+  },
+
   getLocalIPs: () => {
     if (!window.electronAPI) return Promise.resolve(['localhost', '127.0.0.1']);
     return window.electronAPI.getLocalIPs();

@@ -10,7 +10,8 @@ async function startService(projectPath, command = 'npm run dev') {
     const process = spawn(cmd, args, {
       cwd: projectPath,
       shell: true,
-      detached: false
+      detached: false,
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     const pid = process.pid;
@@ -36,6 +37,21 @@ async function startService(projectPath, command = 'npm run dev') {
     });
 
     return { success: true, pid, message: 'Service started' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function sendTerminalInput(pid, input) {
+  const serviceInfo = runningProcesses.get(pid);
+  
+  if (!serviceInfo) {
+    return { success: false, error: 'Service not found' };
+  }
+
+  try {
+    serviceInfo.process.stdin.write(input + '\n');
+    return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -81,6 +97,7 @@ function getRunningServices() {
 module.exports = {
   startService,
   stopService,
-  getRunningServices
+  getRunningServices,
+  sendTerminalInput
 };
 

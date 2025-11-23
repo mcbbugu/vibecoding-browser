@@ -191,6 +191,7 @@ function AppContent() {
         }}
         onQuickNavigate={handleQuickNavigateWithSelect}
         onScanPorts={handleScanPorts}
+        isEditModalOpen={isEditModalOpen}
       />
 
       <SearchModal 

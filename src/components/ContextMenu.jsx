@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Play, Square, FolderOpen, Settings, Trash2, ExternalLink, Edit } from 'lucide-react';
 
 export const ContextMenu = ({ position, project, onClose, onAction }) => {
@@ -17,15 +18,17 @@ export const ContextMenu = ({ position, project, onClose, onAction }) => {
   const style = {
     top: position.y,
     left: position.x,
+    zIndex: 99998,
+    position: 'fixed'
   };
 
   const isRunning = project.status === 'running';
 
-  return (
+  const menuContent = (
     <div 
         ref={menuRef}
         style={style}
-        className="fixed z-50 w-48 bg-white/90 dark:bg-[#1c1c1f]/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 animate-fade-in origin-top-left flex flex-col"
+        className="fixed w-48 bg-white/90 dark:bg-[#1c1c1f]/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 animate-fade-in origin-top-left flex flex-col"
     >
        <div className="px-3 py-2 border-b border-zinc-100 dark:border-white/5 mb-1">
            <p className="text-xs font-bold text-zinc-800 dark:text-white truncate">{project.name}</p>
@@ -90,5 +93,7 @@ export const ContextMenu = ({ position, project, onClose, onAction }) => {
        </button>
     </div>
   );
+
+  return createPortal(menuContent, document.body);
 };
 

@@ -8,10 +8,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startService: (projectPath, command) => ipcRenderer.invoke('start-service', projectPath, command),
   stopService: (pid) => ipcRenderer.invoke('stop-service', pid),
   getRunningServices: () => ipcRenderer.invoke('get-running-services'),
+  sendTerminalInput: (pid, input) => ipcRenderer.invoke('send-terminal-input', pid, input),
   getLocalIPs: () => ipcRenderer.invoke('get-local-ips'),
   openDevTools: () => ipcRenderer.send('open-devtools'),
   openFolder: (path) => ipcRenderer.invoke('open-folder', path),
   openEditor: (command, args) => ipcRenderer.invoke('open-editor', command, args),
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
   
   // BrowserView API
   browserViewLoad: (url, bounds) => ipcRenderer.invoke('browser-view-load', url, bounds),

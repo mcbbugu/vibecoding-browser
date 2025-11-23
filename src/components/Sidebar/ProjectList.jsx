@@ -81,18 +81,23 @@ export const ProjectList = ({
                           }}
                         >
                           <div className={`
-                            w-3 h-3 rounded-full transition-all duration-300
-                            ${project.status === 'running' 
-                              ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' 
-                              : project.status === 'error'
-                              ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
-                              : 'bg-zinc-300 dark:bg-zinc-700'}
+                            absolute inset-0 rounded-md transition-opacity duration-300
+                            ${project.status === 'running' ? 'bg-emerald-500/10 dark:bg-emerald-500/20' : 'bg-transparent'}
                           `} />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            {project.status === 'running' 
-                              ? <Square size={10} className="text-white fill-white" />
-                              : <Play size={10} className="text-white fill-white" />
-                            }
+                          
+                          <div className={`
+                            w-2 h-2 rounded-full transition-all duration-300 shadow-sm
+                            ${project.status === 'running' ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-zinc-300 dark:bg-zinc-600'}
+                            ${project.status === 'error' ? 'bg-rose-500 shadow-rose-500/50' : ''}
+                            group-hover:opacity-0
+                          `} />
+
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">
+                            {project.status === 'running' ? (
+                              <Square size={10} className="fill-current text-rose-500" />
+                            ) : (
+                              <Play size={10} className="fill-current text-emerald-500 ml-0.5" />
+                            )}
                           </div>
                         </div>
                       )}

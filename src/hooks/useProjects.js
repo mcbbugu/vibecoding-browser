@@ -77,13 +77,17 @@ export const useProjects = () => {
     }
 
     if (!project.path) {
-      setProjects(prev => prev.map(p => {
-        if (p.id === id) {
-          const toggled = p.status === 'running' ? 'stopped' : 'running';
-          return { ...p, status: toggled };
-        }
-        return p;
-      }));
+      if (project.status === 'running') {
+        setProjects(prev => prev.map(p => {
+          if (p.id === id) {
+            return { ...p, status: 'stopped' };
+          }
+          return p;
+        }));
+        showToast(`${project.name} stopped`, 'info');
+      } else {
+        showToast('请先设置项目路径才能启动服务', 'error');
+      }
       return;
     }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
 import { storage } from '../utils/storage';
 
@@ -59,10 +60,26 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+  const modalContent = (
+    <div 
+      className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      style={{ 
+        zIndex: 99999,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div 
         className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md mx-4 border border-zinc-200 dark:border-zinc-800"
+        style={{ zIndex: 100000 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
@@ -165,5 +182,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 

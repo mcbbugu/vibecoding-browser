@@ -7,6 +7,7 @@ import { ProjectList } from './Sidebar/ProjectList';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
 import { Search, RefreshCw } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
+import { useApp } from '../contexts/AppContext';
 
 export const Sidebar = ({
   spaces,
@@ -30,6 +31,7 @@ export const Sidebar = ({
   onToggleCollapse,
   isContentHidden
 }) => {
+  const { setIsEditorConfigOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
   const [isSpaceManageModalOpen, setIsSpaceManageModalOpen] = useState(false);
 
@@ -126,6 +128,9 @@ export const Sidebar = ({
                 if (project.path) {
                   electronAPI.revealInFinder(project.path);
                 }
+                break;
+              case 'settings':
+                setIsEditorConfigOpen(true);
                 break;
             }
             setContextMenu(null);

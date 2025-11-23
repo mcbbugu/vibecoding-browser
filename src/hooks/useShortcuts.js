@@ -58,6 +58,11 @@ export const useShortcuts = () => {
     const handleKeyDown = (e) => {
       const target = e.target;
       const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      const isModalOpen = document.querySelector('[class*="z-[9999]"]') !== null;
+      
+      if (isModalOpen) {
+        return;
+      }
       
       if (isInputFocused && !target.hasAttribute('data-address-bar')) {
         return;
