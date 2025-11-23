@@ -1,0 +1,24 @@
+export const CMD_S_DOUBLE_INTERVAL = 450;
+
+export const PORT_RANGES = {
+  NEXT: { min: 3000, max: 3005 },
+  VITE: { min: 5173, max: 5175 },
+  NODE: [8080, 8081]
+};
+
+export const DEFAULT_PROJECT_TYPE = 'web';
+
+export const PROJECT_STATUS = {
+  RUNNING: 'running',
+  STOPPED: 'stopped',
+  STARTING: 'starting',
+  ERROR: 'error'
+};
+
+export const TOAST_TYPES = {
+  INFO: 'info',
+  SUCCESS: 'success',
+  ERROR: 'error',
+  WARNING: 'warning'
+};
+
