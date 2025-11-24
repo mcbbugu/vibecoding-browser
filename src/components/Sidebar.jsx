@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { ContextMenu } from './ContextMenu';
-import { SpaceManageModal } from './SpaceManageModal';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
-import { SpaceTabs } from './Sidebar/SpaceTabs';
 import { ProjectList } from './Sidebar/ProjectList';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
 import { Search, RefreshCw } from 'lucide-react';
@@ -10,16 +8,9 @@ import { electronAPI } from '../utils/electron';
 import { useApp } from '../contexts/AppContext';
 
 export const Sidebar = ({
-  spaces,
-  activeSpaceId,
-  setActiveSpaceId,
-  onCreateSpace,
-  onUpdateSpace,
-  onDeleteSpace,
   projects,
   activeProjectId,
   onSelectProject,
-  onToggleProjectStatus,
   onAddProject,
   onDeleteProject,
   onOpenEdit,
@@ -33,9 +24,6 @@ export const Sidebar = ({
 }) => {
   const { setIsEditorConfigOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
-  const [isSpaceManageModalOpen, setIsSpaceManageModalOpen] = useState(false);
-
-  const currentSpaceProjects = projects.filter(p => p.space === activeSpaceId);
 
   const handleContextMenu = (e, projectId) => {
     e.preventDefault();
@@ -72,18 +60,10 @@ export const Sidebar = ({
               </button>
             </div>
 
-            <SpaceTabs 
-              spaces={spaces}
-              activeSpaceId={activeSpaceId}
-              onSelectSpace={setActiveSpaceId}
-              onCreateSpace={onCreateSpace}
-            />
-
             <ProjectList 
-              projects={currentSpaceProjects}
+              projects={projects}
               activeProjectId={activeProjectId}
               onSelectProject={onSelectProject}
-              onToggleStatus={onToggleProjectStatus}
               onContextMenu={handleContextMenu}
               isCollapsed={isCollapsed}
             />
@@ -91,7 +71,6 @@ export const Sidebar = ({
             <SidebarFooter 
               isDarkMode={isDarkMode}
               onToggleTheme={toggleTheme}
-              onOpenSpaceManage={() => setIsSpaceManageModalOpen(true)}
             />
           </>
         )}
@@ -101,15 +80,13 @@ export const Sidebar = ({
         <ContextMenu
           position={{ x: contextMenu.x, y: contextMenu.y }}
           project={contextMenu.project}
+          sidebarWidth={260}
           onClose={() => setContextMenu(null)}
           onAction={(action, projectId) => {
             const project = projects.find(p => p.id === projectId);
             if (!project) return;
             
             switch(action) {
-              case 'toggle':
-                onToggleProjectStatus(projectId);
-                break;
               case 'edit':
                 onOpenEdit(projectId);
                 break;
@@ -126,7 +103,7 @@ export const Sidebar = ({
                 break;
               case 'finder':
                 if (project.path) {
-                  electronAPI.revealInFinder(project.path);
+                  electronAPI.openFolder(project.path);
                 }
                 break;
               case 'settings':
@@ -137,18 +114,6 @@ export const Sidebar = ({
           }}
         />
       )}
-
-      <SpaceManageModal
-        isOpen={isSpaceManageModalOpen}
-        onClose={() => setIsSpaceManageModalOpen(false)}
-        spaces={spaces}
-        onCreateSpace={onCreateSpace}
-        onUpdateSpace={onUpdateSpace}
-        onDeleteSpace={onDeleteSpace}
-        activeSpaceId={activeSpaceId}
-        setActiveSpaceId={setActiveSpaceId}
-        showToast={showToast}
-      />
     </>
   );
 };

@@ -25,6 +25,15 @@ export const storage = {
     } catch (error) {
       console.error('Failed to remove from localStorage:', error);
     }
+  },
+
+  has: (key) => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem(key) !== null;
+    } catch {
+      return false;
+    }
   }
 };
 

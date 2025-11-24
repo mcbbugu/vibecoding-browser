@@ -1,8 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, ShoppingCart, Activity, Globe, Box, Flame } from 'lucide-react';
 
-export const SPACES = [];
-
 export const MOCK_PROJECTS = [
   {
     id: '1',
@@ -10,7 +8,6 @@ export const MOCK_PROJECTS = [
     url: 'http://localhost:3000',
     port: 3000,
     status: 'running',
-    space: 'work',
     path: '~/dev/vibecoding/dashboard',
     type: 'next',
   },
@@ -20,7 +17,6 @@ export const MOCK_PROJECTS = [
     url: 'http://localhost:8080',
     port: 8080,
     status: 'stopped',
-    space: 'work',
     path: '~/dev/client/api',
     type: 'node',
   },
@@ -30,7 +26,6 @@ export const MOCK_PROJECTS = [
     url: 'http://localhost:5173',
     port: 5173,
     status: 'running',
-    space: 'personal',
     path: '~/dev/blog',
     type: 'vite',
   },
@@ -40,7 +35,6 @@ export const MOCK_PROJECTS = [
     url: 'http://localhost:4000',
     port: 4000,
     status: 'error',
-    space: 'work',
     path: '~/dev/vibecoding/analytics',
     type: 'python',
   },
@@ -50,7 +44,6 @@ export const MOCK_PROJECTS = [
     url: 'http://localhost:6006',
     port: 6006,
     status: 'stopped',
-    space: 'tools',
     path: '~/dev/design-system',
     type: 'react',
   },

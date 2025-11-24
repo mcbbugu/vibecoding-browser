@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Square, FolderOpen, Settings, Trash2, ExternalLink, Edit } from 'lucide-react';
+import { FolderOpen, Settings, Trash2, ExternalLink, Edit } from 'lucide-react';
 
-export const ContextMenu = ({ position, project, onClose, onAction }) => {
+export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth = 260 }) => {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -15,14 +15,23 @@ export const ContextMenu = ({ position, project, onClose, onAction }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
+  const menuWidth = 192;
+  let adjustedX = position.x;
+  
+  if (adjustedX + menuWidth > sidebarWidth) {
+    adjustedX = sidebarWidth - menuWidth - 8;
+  }
+  
+  if (adjustedX < 8) {
+    adjustedX = 8;
+  }
+
   const style = {
     top: position.y,
-    left: position.x,
-    zIndex: 99998,
+    left: adjustedX,
+    zIndex: 100001,
     position: 'fixed'
   };
-
-  const isRunning = project.status === 'running';
 
   const menuContent = (
     <div 
@@ -35,14 +44,6 @@ export const ContextMenu = ({ position, project, onClose, onAction }) => {
            <p className="text-[10px] text-zinc-400 font-mono truncate">{project.path ? project.path.split('/').pop() : (project.url || '')}</p>
        </div>
        
-       <button 
-         onClick={() => onAction('toggle', project.id)}
-         className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-indigo-500 hover:text-white transition-colors mx-1 rounded-md"
-       >
-          {isRunning ? <Square size={12} /> : <Play size={12} />}
-          {isRunning ? 'Stop Server' : 'Start Server'}
-       </button>
-
        {project.url && (
          <button 
            onClick={() => onAction('open', project.id)}

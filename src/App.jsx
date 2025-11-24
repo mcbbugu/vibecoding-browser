@@ -4,6 +4,7 @@ import { BrowserView } from './components/BrowserView';
 import { SearchModal } from './components/SearchModal';
 import { Toast } from './components/Toast';
 import { ProjectEditModal } from './components/ProjectEditModal';
+import { EditorConfigModal } from './components/EditorConfigModal';
 import { UrlInputModal } from './components/UrlInputModal';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useProjects } from './hooks/useProjects';
@@ -12,14 +13,13 @@ import { getProjectCategory } from './constants';
 
 function AppContent() {
   const {
-    spaces,
-    setSpaces,
     projects,
     isLoading,
-    activeSpaceId,
-    setActiveSpaceId,
     activeProjectId,
     setActiveProjectId,
+    openTabs,
+    addTab,
+    closeTab,
     isSearchOpen,
     setIsSearchOpen,
     isEditModalOpen,
@@ -28,6 +28,8 @@ function AppContent() {
     setIsUrlInputModalOpen,
     editingProjectId,
     setEditingProjectId,
+    isEditorConfigOpen,
+    setIsEditorConfigOpen,
     toast,
     setToast,
     isDarkMode,
@@ -49,15 +51,20 @@ function AppContent() {
 
   useShortcuts();
 
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('sidebar-toggle'));
+    }, 0);
+  }, [setIsSidebarCollapsed]);
+
   const handleSelectProject = useCallback((id) => {
-    setActiveProjectId(id);
-    if (!id) return;
-    
-    const project = projects.find(p => p.id === id);
-    if (project && project.space !== activeSpaceId) {
-      setActiveSpaceId(project.space);
+    if (id) {
+      addTab(id);
+    } else {
+      setActiveProjectId(null);
     }
-  }, [projects, activeSpaceId, setActiveProjectId, setActiveSpaceId]);
+  }, [addTab, setActiveProjectId]);
 
   const handleAddProject = useCallback(() => {
     setIsUrlInputModalOpen(true);
@@ -65,9 +72,9 @@ function AppContent() {
 
   const handleUrlInputSave = useCallback((projectData) => {
     const newProject = addProject(projectData);
-    setActiveProjectId(newProject.id);
+    addTab(newProject.id);
     showToast('项目已创建', 'success');
-  }, [addProject, setActiveProjectId, showToast]);
+  }, [addProject, addTab, showToast]);
 
   const handleDeleteProjectWithCleanup = useCallback((id) => {
     handleDeleteProject(id);
@@ -93,45 +100,10 @@ function AppContent() {
     setEditingProjectId(null);
   }, [setIsEditModalOpen, setEditingProjectId]);
 
-  const handleCreateSpace = useCallback((name) => {
-    const newSpace = {
-      id: `space-${Date.now()}`,
-      name: name.trim() || 'New Space',
-      color: 'bg-indigo-500',
-      icon: 'folder'
-    };
-    setSpaces(prev => {
-      const updated = [...prev, newSpace];
-      if (updated.length === 1) {
-        setActiveSpaceId(newSpace.id);
-      }
-      return updated;
-    });
-    showToast(`空间 "${newSpace.name}" 已创建`, 'success');
-  }, [setSpaces, setActiveSpaceId, showToast]);
-
-  const handleUpdateSpace = useCallback((id, updates) => {
-    setSpaces(prev => prev.map(space => 
-      space.id === id ? { ...space, ...updates } : space
-    ));
-  }, [setSpaces]);
-
-  const handleDeleteSpace = useCallback((id) => {
-    setSpaces(prev => {
-      const filtered = prev.filter(space => space.id !== id);
-      if (activeSpaceId === id && filtered.length > 0) {
-        setActiveSpaceId(filtered[0].id);
-      } else if (filtered.length === 0) {
-        setActiveSpaceId(null);
-      }
-      return filtered;
-    });
-  }, [setSpaces, activeSpaceId, setActiveSpaceId]);
-
   const handleQuickNavigateWithSelect = useCallback((input) => {
     const newProject = handleQuickNavigate(input);
-    setActiveProjectId(newProject.id);
-  }, [handleQuickNavigate, setActiveProjectId]);
+    addTab(newProject.id);
+  }, [handleQuickNavigate, addTab]);
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -146,16 +118,9 @@ function AppContent() {
   return (
     <div className="flex w-screen h-screen bg-zinc-50 dark:bg-[#111111] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
       <Sidebar 
-        spaces={spaces}
-        activeSpaceId={activeSpaceId}
-        setActiveSpaceId={setActiveSpaceId}
-        onCreateSpace={handleCreateSpace}
-        onUpdateSpace={handleUpdateSpace}
-        onDeleteSpace={handleDeleteSpace}
         projects={projects}
         activeProjectId={activeProjectId}
         onSelectProject={handleSelectProject}
-        onToggleProjectStatus={handleToggleProjectStatus}
         onAddProject={handleAddProject}
         onDeleteProject={handleDeleteProjectWithCleanup}
         onOpenEdit={handleOpenEditModal}
@@ -164,18 +129,12 @@ function AppContent() {
         toggleTheme={toggleTheme}
         showToast={showToast}
         isCollapsed={isSidebarCollapsed}
-      onToggleCollapse={() => {
-        setIsSidebarCollapsed(!isSidebarCollapsed);
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('sidebar-toggle'));
-        }, 0);
-      }}
-      isContentHidden={isSidebarContentHidden}
+        onToggleCollapse={handleToggleSidebar}
+        isContentHidden={isSidebarContentHidden}
       />
       
       <BrowserView 
         project={activeProject} 
-        onStatusChange={handleToggleProjectStatus}
         onUpdateProject={handleUpdateProjectWithSelect}
         projects={projects}
         onSelectProject={handleSelectProject}
@@ -183,15 +142,14 @@ function AppContent() {
         onDeleteProject={handleDeleteProjectWithCleanup}
         showToast={showToast}
         isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={() => {
-          setIsSidebarCollapsed(!isSidebarCollapsed);
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('sidebar-toggle'));
-          }, 0);
-        }}
+        onToggleSidebar={handleToggleSidebar}
         onQuickNavigate={handleQuickNavigateWithSelect}
         onScanPorts={handleScanPorts}
         isEditModalOpen={isEditModalOpen}
+        openTabs={openTabs}
+        activeTabId={activeProjectId}
+        onSelectTab={handleSelectProject}
+        onCloseTab={closeTab}
       />
 
       <SearchModal 
@@ -207,7 +165,6 @@ function AppContent() {
         isOpen={isUrlInputModalOpen}
         onClose={() => setIsUrlInputModalOpen(false)}
         onSave={handleUrlInputSave}
-        activeSpaceId={activeSpaceId}
       />
 
       <ProjectEditModal
@@ -215,8 +172,13 @@ function AppContent() {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSave={handleUpdateProjectWithSelect}
-        spaces={spaces}
         projects={projects}
+      />
+
+      <EditorConfigModal
+        isOpen={isEditorConfigOpen}
+        onClose={() => setIsEditorConfigOpen(false)}
+        showToast={showToast}
       />
       
       <style>{`
@@ -227,6 +189,19 @@ function AppContent() {
         }
         .animate-loading-bar {
           animation: loading-bar 1.5s infinite linear;
+        }
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
         }
         .scrollbar-hide {
           -ms-overflow-style: none;

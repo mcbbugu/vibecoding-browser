@@ -6,7 +6,7 @@ import { electronAPI } from '../utils/electron';
 import { getProjectCategory } from '../constants';
 
 export const useProjects = () => {
-  const { projects, setProjects, showToast, activeSpaceId } = useApp();
+  const { projects, setProjects, showToast } = useApp();
 
   const handleAddProject = useCallback((projectData) => {
     const newProject = {
@@ -20,8 +20,6 @@ export const useProjects = () => {
 
   const handleUpdateProject = useCallback((id, updates) => {
     const normalizedUpdates = normalizeProjectUpdates(updates);
-    const oldBoundProjectId = projects.find(p => p.id === id)?.boundProjectId;
-    const newBoundProjectId = normalizedUpdates.boundProjectId || null;
 
     setProjects(prev => {
       const updated = prev.map(p => {
@@ -33,30 +31,16 @@ export const useProjects = () => {
           }
           return merged;
         }
-        if (oldBoundProjectId && p.id === oldBoundProjectId && p.boundProjectId === id) {
-          return { ...p, boundProjectId: null };
-        }
-        if (newBoundProjectId && p.id === newBoundProjectId) {
-          return { ...p, boundProjectId: id };
-        }
         return p;
       });
       return updated;
     });
 
     showToast('Project updated', 'success');
-  }, [setProjects, showToast, projects]);
+  }, [setProjects, showToast]);
 
   const handleDeleteProject = useCallback((id) => {
-    setProjects(prev => {
-      const updated = prev.map(p => {
-        if (p.boundProjectId === id) {
-          return { ...p, boundProjectId: null };
-        }
-        return p;
-      });
-      return updated.filter(p => p.id !== id);
-    });
+    setProjects(prev => prev.filter(p => p.id !== id));
     showToast('Project removed', 'info');
   }, [setProjects, showToast]);
 
@@ -161,7 +145,6 @@ export const useProjects = () => {
               url: `http://localhost:${port}`,
               port: port,
               status: 'running',
-              space: activeSpaceId,
               path: '',
               type: detectProjectType(port),
               note: '',
@@ -189,7 +172,7 @@ export const useProjects = () => {
       console.error('Port scan failed:', error);
       showToast('端口扫描失败', 'error');
     }
-  }, [setProjects, showToast, activeSpaceId]);
+  }, [setProjects, showToast]);
 
   const handleQuickNavigate = useCallback((input) => {
     let targetUrl = input.trim();
@@ -205,7 +188,6 @@ export const useProjects = () => {
       name: targetUrl.includes('google.com/search') ? 'Search: ' + input : input,
       url: targetUrl,
       status: 'running',
-      space: activeSpaceId,
       type: 'web',
       port: null,
       category: 'online'
@@ -214,7 +196,7 @@ export const useProjects = () => {
     setProjects(prev => [...prev, newProject]);
     showToast('Opening: ' + targetUrl, 'success');
     return newProject;
-  }, [setProjects, showToast, activeSpaceId]);
+  }, [setProjects, showToast]);
 
   return {
     projects,

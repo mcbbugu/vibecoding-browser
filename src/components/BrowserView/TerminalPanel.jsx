@@ -1,53 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Terminal } from 'lucide-react';
-import { electronAPI } from '../../utils/electron';
 
 export const TerminalPanel = ({ 
   showTerminal, 
   terminalLogs, 
   project,
   onClear,
-  onClose,
-  onAddLog
+  onClose
 }) => {
-  const [input, setInput] = useState('');
-  const inputRef = useRef(null);
   const logsEndRef = useRef(null);
-
-  useEffect(() => {
-    if (showTerminal && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [showTerminal]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [terminalLogs]);
 
   if (!showTerminal) return null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || !project?.pid) return;
-
-    const command = input.trim();
-    setInput('');
-    
-    if (onAddLog) {
-      onAddLog({ type: 'input', message: `➜ ${command}` });
-    }
-
-    try {
-      const result = await electronAPI.sendTerminalInput(project.pid, command);
-      if (!result.success && onAddLog) {
-        onAddLog({ type: 'error', message: result.error || 'Failed to send command' });
-      }
-    } catch (error) {
-      if (onAddLog) {
-        onAddLog({ type: 'error', message: error.message });
-      }
-    }
-  };
 
   return (
     <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-zinc-900/95 dark:bg-[#0e0e10]/95 backdrop-blur-xl border-t border-zinc-700 dark:border-white/10 p-0 font-mono text-xs text-zinc-400 overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.3)] transition-all animate-slide-up z-30 flex flex-col">
@@ -119,22 +86,6 @@ export const TerminalPanel = ({
         )}
         <div ref={logsEndRef} />
       </div>
-      {project?.pid && (
-        <form onSubmit={handleSubmit} className="px-4 py-2 border-t border-zinc-700 dark:border-white/10 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-emerald-400">➜</span>
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-zinc-300 placeholder-zinc-600"
-              placeholder="输入命令..."
-              autoFocus
-            />
-          </div>
-        </form>
-      )}
     </div>
   );
 };

@@ -1,92 +1,72 @@
+const safeInvoke = (method, fallback) => {
+  return (...args) => {
+    if (!window.electronAPI) return Promise.resolve(fallback);
+    return window.electronAPI[method](...args);
+  };
+};
+
 export const electronAPI = {
-  getProjects: () => {
-    if (!window.electronAPI) return Promise.resolve([]);
-    return window.electronAPI.getProjects();
+  getProjects: safeInvoke('getProjects', []),
+
+  saveProjects: safeInvoke('saveProjects', { success: false }),
+
+  scanCommonPorts: safeInvoke('scanCommonPorts', []),
+
+  startService: safeInvoke('startService', { success: false, error: 'Electron API not available' }),
+
+  stopService: safeInvoke('stopService', { success: false, error: 'Electron API not available' }),
+
+  getRunningServices: safeInvoke('getRunningServices', []),
+
+  sendTerminalInput: safeInvoke('sendTerminalInput', { success: false, error: 'Electron API not available' }),
+
+  getLocalIPs: safeInvoke('getLocalIPs', ['localhost', '127.0.0.1']),
+
+  openFolder: safeInvoke('openFolder', { success: false, error: 'Electron API not available' }),
+
+  openEditor: safeInvoke('openEditor', { success: false, error: 'Electron API not available' }),
+
+  selectFolder: safeInvoke('selectFolder', null),
+
+  browserViewLoad: (url, bounds, projectId) => {
+    if (window.electronAPI?.browserViewLoad) {
+      return window.electronAPI.browserViewLoad(url, bounds, projectId);
+    }
+    return Promise.resolve({ success: false, error: 'Electron API not available' });
+  },
+  browserViewRemove: (projectId) => {
+    if (window.electronAPI?.browserViewRemove) {
+      return window.electronAPI.browserViewRemove(projectId);
+    }
+    return Promise.resolve({ success: false });
   },
 
-  saveProjects: (projects) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.saveProjects(projects);
-  },
+  browserViewUpdateBounds: safeInvoke('browserViewUpdateBounds', { success: false }),
 
-  scanCommonPorts: () => {
-    if (!window.electronAPI) return Promise.resolve([]);
-    return window.electronAPI.scanCommonPorts();
-  },
+  browserViewReload: safeInvoke('browserViewReload', { success: false }),
 
-  startService: (projectPath, command) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.startService(projectPath, command);
-  },
+  browserViewGoBack: safeInvoke('browserViewGoBack', { success: false }),
 
-  stopService: (pid) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.stopService(pid);
-  },
+  browserViewGoForward: safeInvoke('browserViewGoForward', { success: false }),
 
-  getRunningServices: () => {
-    if (!window.electronAPI) return Promise.resolve([]);
-    return window.electronAPI.getRunningServices();
-  },
-
-  sendTerminalInput: (pid, input) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.sendTerminalInput(pid, input);
-  },
-
-  getLocalIPs: () => {
-    if (!window.electronAPI) return Promise.resolve(['localhost', '127.0.0.1']);
-    return window.electronAPI.getLocalIPs();
-  },
-
-  openFolder: (folderPath) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.openFolder(folderPath);
-  },
-  openEditor: (command, args) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.openEditor(command, args);
-  },
-
-  selectFolder: () => {
-    if (!window.electronAPI) return Promise.resolve(null);
-    return window.electronAPI.selectFolder();
-  },
-
-  browserViewLoad: (url, bounds) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false, error: 'Electron API not available' });
-    return window.electronAPI.browserViewLoad(url, bounds);
-  },
-
-  browserViewRemove: () => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewRemove();
-  },
-
-  browserViewUpdateBounds: (bounds) => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewUpdateBounds(bounds);
-  },
-
-  browserViewReload: () => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewReload();
-  },
-
-  browserViewGoBack: () => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewGoBack();
-  },
-
-  browserViewGoForward: () => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewGoForward();
-  },
-
-  browserViewDevTools: () => {
-    if (!window.electronAPI) return Promise.resolve({ success: false });
-    return window.electronAPI.browserViewDevTools();
-  },
+  browserViewDevTools: safeInvoke('browserViewDevTools', { success: false }),
+  browserViewIsDevToolsOpened: safeInvoke('browserViewIsDevToolsOpened', { isOpened: false }),
+  
+  captureScreenshot: safeInvoke('captureScreenshot', { success: false, error: 'Electron API not available' }),
+  
+  browserViewFind: safeInvoke('browserViewFind', { success: false, error: 'Electron API not available' }),
+  browserViewStopFind: safeInvoke('browserViewStopFind', { success: false, error: 'Electron API not available' }),
+  browserViewClearCache: safeInvoke('browserViewClearCache', { success: false, error: 'Electron API not available' }),
+  
+  browserViewCanGoBack: safeInvoke('browserViewCanGoBack', { canGoBack: false }),
+  browserViewCanGoForward: safeInvoke('browserViewCanGoForward', { canGoForward: false }),
+  browserViewCopy: safeInvoke('browserViewCopy', { success: false }),
+  browserViewPaste: safeInvoke('browserViewPaste', { success: false }),
+  browserViewSelectAll: safeInvoke('browserViewSelectAll', { success: false }),
+  browserViewViewSource: safeInvoke('browserViewViewSource', { success: false }),
+  browserViewSaveAs: safeInvoke('browserViewSaveAs', { success: false }),
+  browserViewPrint: safeInvoke('browserViewPrint', { success: false }),
+  browserViewGetPageInfo: safeInvoke('browserViewGetPageInfo', null),
 
   onBrowserViewLoading: (callback) => {
     if (!window.electronAPI?.onBrowserViewLoading) return null;
@@ -96,6 +76,11 @@ export const electronAPI = {
   onBrowserViewError: (callback) => {
     if (!window.electronAPI?.onBrowserViewError) return null;
     return window.electronAPI.onBrowserViewError(callback);
+  },
+
+  onBrowserViewNavigate: (callback) => {
+    if (!window.electronAPI?.onBrowserViewNavigate) return null;
+    return window.electronAPI.onBrowserViewNavigate(callback);
   },
 
   onGlobalShortcut: (callback) => {

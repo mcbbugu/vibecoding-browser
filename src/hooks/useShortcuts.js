@@ -7,6 +7,7 @@ export const useShortcuts = () => {
     setIsSearchOpen, 
     setActiveProjectId, 
     activeProjectId,
+    openTabs,
     showToast,
     handleCmdSPress
   } = useApp();
@@ -49,10 +50,29 @@ export const useShortcuts = () => {
       case 'cmd-s':
         handleCmdSPress();
         break;
+      case 'find':
+        if (electronAPI.isAvailable()) {
+          electronAPI.browserViewFind('');
+        }
+        break;
+      case 'next-tab':
+        if (openTabs.length > 1) {
+          const currentIndex = openTabs.indexOf(activeProjectId);
+          const nextIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
+          setActiveProjectId(openTabs[nextIndex]);
+        }
+        break;
+      case 'prev-tab':
+        if (openTabs.length > 1) {
+          const currentIndex = openTabs.indexOf(activeProjectId);
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
+          setActiveProjectId(openTabs[prevIndex]);
+        }
+        break;
       default:
         break;
     }
-  }, [activeProjectId, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress]);
+  }, [activeProjectId, openTabs, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -64,11 +84,36 @@ export const useShortcuts = () => {
         return;
       }
       
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      if (isCmdOrCtrl && e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleShortcutAction('prev-tab');
+        } else {
+          handleShortcutAction('next-tab');
+        }
+        return;
+      }
+
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        handleShortcutAction('find');
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (electronAPI.isAvailable()) {
+          electronAPI.browserViewStopFind('clearSelection');
+        }
+        return;
+      }
+      
       if (isInputFocused && !target.hasAttribute('data-address-bar')) {
         return;
       }
 
-      if (!(e.metaKey || e.ctrlKey)) return;
+      if (!isCmdOrCtrl) return;
 
       const key = e.key.toLowerCase();
       const shortcuts = {
@@ -87,19 +132,20 @@ export const useShortcuts = () => {
         return;
       }
 
-      if (e.key === '[') {
+      if (e.key === '[' && isCmdOrCtrl) {
         e.preventDefault();
         handleShortcutAction('go-back');
         return;
       }
-      if (e.key === ']') {
+      if (e.key === ']' && isCmdOrCtrl) {
         e.preventDefault();
         handleShortcutAction('go-forward');
+        return;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [handleShortcutAction]);
 
   useEffect(() => {

@@ -1,39 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, FolderOpen, Link2 } from 'lucide-react';
+import { X, Save, FolderOpen, Plus, Trash2 } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
-import { getProjectCategory } from '../constants';
+import { storage } from '../utils/storage';
 
-export const ProjectEditModal = ({ project, isOpen, onClose, onSave, spaces = [], projects = [] }) => {
+export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = [] }) => {
   const getDefaultForm = () => ({
     name: '',
     url: '',
     port: '',
     path: '',
     type: 'web',
-    space: spaces.length > 0 ? spaces[0].id : 'work',
     note: '',
-    boundProjectId: ''
+    editorConfig: null
   });
 
   const [formData, setFormData] = useState(getDefaultForm());
 
   useEffect(() => {
     if (project) {
+      const globalEditorConfig = storage.get('editorConfig', { command: 'code', args: ['{path}'] });
       setFormData({
         name: project.name || '',
         url: project.url || '',
         port: project.port ?? '',
         path: project.path || '',
         type: project.type || 'web',
-        space: project.space || (spaces.length > 0 ? spaces[0].id : 'work'),
         note: project.note || '',
-        boundProjectId: project.boundProjectId || ''
+        editorConfig: project.editorConfig || null
       });
     } else {
       setFormData(getDefaultForm());
     }
-  }, [project, spaces]);
+  }, [project]);
 
   if (!isOpen || !project) return null;
 
@@ -46,25 +45,97 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, spaces = []
       port: formData.port === '' ? null : Number(formData.port) || null,
       path: formData.path.trim(),
       note: formData.note.trim(),
-      boundProjectId: formData.boundProjectId || null
+      editorConfig: formData.editorConfig || undefined
     };
     onSave(project.id, payload);
     onClose();
   };
-
-  const currentCategory = project ? getProjectCategory(project) : 'local';
-  const oppositeCategory = currentCategory === 'local' ? 'online' : 'local';
-  const availableProjects = projects.filter(p => {
-    if (p.id === project.id) return false;
-    const pCategory = getProjectCategory(p);
-    return pCategory === oppositeCategory;
-  });
 
   const handleSelectFolder = async () => {
     const folder = await electronAPI.selectFolder();
     if (folder) {
       setFormData(prev => ({ ...prev, path: folder }));
     }
+  };
+
+  const presetEditors = [
+    { name: 'VS Code', command: 'code', args: ['{path}'] },
+    { name: 'Cursor', command: 'cursor', args: ['{path}'] },
+    { name: 'Windsurf', command: 'windsurf', args: ['{path}'] },
+    { name: 'Sublime Text', command: 'subl', args: ['{path}'] },
+    { name: 'Atom', command: 'atom', args: ['{path}'] },
+    { name: 'WebStorm', command: 'webstorm', args: ['{path}'] },
+  ];
+
+  const getEditorConfig = () => {
+    if (formData.editorConfig) {
+      return formData.editorConfig;
+    }
+    return storage.get('editorConfig', { command: 'code', args: ['{path}'] });
+  };
+
+  const editorConfig = getEditorConfig();
+
+  const handlePresetSelect = (preset) => {
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: {
+        command: preset.command,
+        args: [...preset.args]
+      }
+    }));
+  };
+
+  const handleAddArg = () => {
+    const currentConfig = getEditorConfig();
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: {
+        command: currentConfig.command,
+        args: [...currentConfig.args, '']
+      }
+    }));
+  };
+
+  const handleRemoveArg = (index) => {
+    const currentConfig = getEditorConfig();
+    if (currentConfig.args.length <= 1) return;
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: {
+        command: currentConfig.command,
+        args: currentConfig.args.filter((_, i) => i !== index)
+      }
+    }));
+  };
+
+  const handleArgChange = (index, value) => {
+    const currentConfig = getEditorConfig();
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: {
+        command: currentConfig.command,
+        args: currentConfig.args.map((arg, i) => i === index ? value : arg)
+      }
+    }));
+  };
+
+  const handleCommandChange = (value) => {
+    const currentConfig = getEditorConfig();
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: {
+        command: value,
+        args: currentConfig.args
+      }
+    }));
+  };
+
+  const handleUseGlobalConfig = () => {
+    setFormData(prev => ({
+      ...prev,
+      editorConfig: null
+    }));
   };
 
   const modalContent = (
@@ -133,26 +204,19 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, spaces = []
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Type</label>
-              <div className="relative">
-                <select
-                  value={formData.type}
-                  onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  className="w-full px-3 py-2 pr-8 bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all cursor-pointer appearance-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                >
-                  <option value="web" className="bg-white dark:bg-zinc-800">Web</option>
-                  <option value="react" className="bg-white dark:bg-zinc-800">React</option>
-                  <option value="vue" className="bg-white dark:bg-zinc-800">Vue</option>
-                  <option value="next" className="bg-white dark:bg-zinc-800">Next.js</option>
-                  <option value="vite" className="bg-white dark:bg-zinc-800">Vite</option>
-                  <option value="node" className="bg-white dark:bg-zinc-800">Node.js</option>
-                  <option value="python" className="bg-white dark:bg-zinc-800">Python</option>
-                </select>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
+              <select
+                value={formData.type}
+                onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+              >
+                <option value="web">Web</option>
+                <option value="react">React</option>
+                <option value="vue">Vue</option>
+                <option value="next">Next.js</option>
+                <option value="vite">Vite</option>
+                <option value="node">Node.js</option>
+                <option value="python">Python</option>
+              </select>
             </div>
           </div>
 
@@ -177,56 +241,6 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, spaces = []
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Space</label>
-            <div className="relative">
-              <select
-                value={formData.space}
-                onChange={e => setFormData(prev => ({ ...prev, space: e.target.value }))}
-                className="w-full px-3 py-2 pr-8 bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all cursor-pointer appearance-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-              >
-                {spaces.map(space => (
-                  <option key={space.id} value={space.id} className="bg-white dark:bg-zinc-800">{space.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-              <div className="flex items-center gap-2">
-                <Link2 size={14} />
-                <span>绑定项目</span>
-                <span className="text-zinc-400 text-xs font-normal">({oppositeCategory === 'local' ? '本地开发' : '在线域名'})</span>
-              </div>
-            </label>
-            <div className="relative">
-              <select
-                value={formData.boundProjectId}
-                onChange={e => setFormData(prev => ({ ...prev, boundProjectId: e.target.value }))}
-                className="w-full px-3 py-2 pr-8 bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all cursor-pointer appearance-none hover:bg-zinc-50 dark:hover:bg-zinc-800"
-              >
-                <option value="" className="bg-white dark:bg-zinc-800">无绑定</option>
-                {availableProjects.map(p => (
-                  <option key={p.id} value={p.id} className="bg-white dark:bg-zinc-800">{p.name} - {p.url}</option>
-                ))}
-              </select>
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-zinc-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            {availableProjects.length === 0 && (
-              <p className="text-xs text-zinc-400 mt-1">暂无{oppositeCategory === 'local' ? '本地开发' : '在线域名'}项目可绑定</p>
-            )}
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Notes</label>
             <textarea
               value={formData.note}
@@ -235,6 +249,89 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, spaces = []
               className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               placeholder="Add notes about this project..."
             />
+          </div>
+
+          <div className="border-t border-zinc-200 dark:border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">IDE 配置</label>
+              {formData.editorConfig && (
+                <button
+                  type="button"
+                  onClick={handleUseGlobalConfig}
+                  className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                >
+                  使用全局配置
+                </button>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">预设编辑器</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {presetEditors.map(preset => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => handlePresetSelect(preset)}
+                      className={`px-2 py-1.5 text-xs rounded-lg border transition-colors ${
+                        editorConfig.command === preset.command
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                          : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      }`}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">命令</label>
+                <input
+                  type="text"
+                  value={editorConfig.command}
+                  onChange={(e) => handleCommandChange(e.target.value)}
+                  placeholder="例如: code, cursor, subl"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">参数</label>
+                <div className="space-y-2">
+                  {editorConfig.args.map((arg, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={arg}
+                        onChange={(e) => handleArgChange(index, e.target.value)}
+                        placeholder="例如: {path}"
+                        className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                      />
+                      {editorConfig.args.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveArg(index)}
+                          className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddArg}
+                    className="w-full px-3 py-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus size={12} />
+                    添加参数
+                  </button>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">使用 {'{path}'} 作为项目路径占位符</p>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

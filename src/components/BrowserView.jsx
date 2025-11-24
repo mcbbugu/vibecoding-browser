@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './Dashboard';
-import { EditorConfigModal } from './EditorConfigModal';
 import { BrowserToolbar } from './BrowserView/BrowserToolbar';
 import { AddressBar } from './BrowserView/AddressBar';
 import { DeviceSelector } from './BrowserView/DeviceSelector';
 import { BrowserContent } from './BrowserView/BrowserContent';
-import { TerminalPanel } from './BrowserView/TerminalPanel';
-import { Code, Terminal, Monitor } from 'lucide-react';
+import { TabsBar } from './BrowserView/TabsBar';
+import { Code, TerminalSquare, Camera } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
-import { storage } from '../utils/storage';
 import { useApp } from '../contexts/AppContext';
+import { calculateBrowserViewBounds } from '../utils/browserView';
+import { useBrowserViewBounds } from '../hooks/useBrowserViewBounds';
+import { useDevTools } from '../hooks/useDevTools';
+import { useEditor } from '../hooks/useEditor';
+import { useScreenshot } from '../hooks/useScreenshot';
 
 export const BrowserView = ({ 
   project, 
-  onStatusChange, 
   onUpdateProject, 
   projects, 
   onSelectProject, 
@@ -25,19 +28,22 @@ export const BrowserView = ({
   onToggleSidebar, 
   onQuickNavigate, 
   onScanPorts,
-  isEditModalOpen
+  isEditModalOpen,
+  openTabs = [],
+  activeTabId,
+  onSelectTab,
+  onCloseTab
 }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showTerminal, setShowTerminal] = useState(false);
-  const [terminalLogs, setTerminalLogs] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState({ 
     name: '桌面端', 
     width: '100%', 
     height: '100%', 
     category: 'desktop' 
   });
-  const { isEditorConfigOpen, setIsEditorConfigOpen } = useApp();
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
   const browserContainerRef = React.useRef(null);
   const projectUrlRef = React.useRef(null);
   const projectIdRef = React.useRef(null);
@@ -46,40 +52,36 @@ export const BrowserView = ({
   const canDisplayWebview = project && (project.status === 'running' || (!project.path && !project.port));
   const requiresLocalService = project && (project.path || project.port) && project.status !== 'running';
 
-  useEffect(() => {
-    if (!project || !browserContainerRef.current || !canDisplayWebview) return;
-    
-    const updateBounds = () => {
-      if (browserContainerRef.current) {
-        const rect = browserContainerRef.current.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          const bounds = {
-            x: Math.round(rect.x),
-            y: Math.round(rect.y),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height)
-          };
-          electronAPI.browserViewUpdateBounds(bounds);
-        }
-      }
-    };
-    
-    const timer = setTimeout(updateBounds, 350);
-    
-    return () => clearTimeout(timer);
-  }, [isSidebarCollapsed, project, canDisplayWebview]);
+  const { updateBounds, setIsEditorConfigOpen, isEditorConfigOpen } = useApp();
+  const { isDevToolsOpen, toggleDevTools } = useDevTools(project);
+  const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
+  const { captureScreenshot } = useScreenshot(showToast, project);
 
   useEffect(() => {
-    if (isEditModalOpen && electronAPI.isAvailable()) {
+    if ((isEditModalOpen || isEditorConfigOpen) && electronAPI.isAvailable()) {
       electronAPI.browserViewRemove();
       return;
     }
-  }, [isEditModalOpen]);
+  }, [isEditModalOpen, isEditorConfigOpen]);
+
+  useEffect(() => {
+    const checkNavigationState = async () => {
+      if (electronAPI.isAvailable()) {
+        const backResult = await electronAPI.browserViewCanGoBack();
+        const forwardResult = await electronAPI.browserViewCanGoForward();
+        setCanGoBack(backResult?.canGoBack || false);
+        setCanGoForward(forwardResult?.canGoForward || false);
+      }
+    };
+
+    const interval = setInterval(checkNavigationState, 500);
+    return () => clearInterval(interval);
+  }, [project?.id]);
 
   useEffect(() => {
     const projectId = project?.id;
     const projectUrl = project?.url;
-    const shouldLoad = project && canDisplayWebview && projectUrl && !isEditModalOpen;
+    const shouldLoad = project && canDisplayWebview && projectUrl && !isEditModalOpen && !isEditorConfigOpen;
     const urlChanged = projectUrlRef.current !== projectUrl;
     const projectChanged = projectIdRef.current !== projectId;
 
@@ -90,16 +92,9 @@ export const BrowserView = ({
       setUrl(project.url);
       
       const updateBrowserView = () => {
-        if (browserContainerRef.current) {
-          const rect = browserContainerRef.current.getBoundingClientRect();
-          const bounds = {
-            x: Math.round(rect.x),
-            y: Math.round(rect.y),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height)
-          };
-          
-          electronAPI.browserViewLoad(project.url, bounds).then(result => {
+        const bounds = calculateBrowserViewBounds(browserContainerRef);
+        if (bounds) {
+          electronAPI.browserViewLoad(project.url, bounds, project.id).then(result => {
             if (!result.success) {
               showToast(`Failed to load: ${result.error}`, 'error');
             }
@@ -109,98 +104,54 @@ export const BrowserView = ({
       
       const timer = setTimeout(updateBrowserView, 100);
       
-      const handleResize = () => {
-        if (browserContainerRef.current && project) {
-          const rect = browserContainerRef.current.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            const bounds = {
-              x: Math.round(rect.x),
-              y: Math.round(rect.y),
-              width: Math.round(rect.width),
-              height: Math.round(rect.height)
-            };
-            electronAPI.browserViewUpdateBounds(bounds);
-          }
-        }
-      };
-      
-      window.addEventListener('resize', handleResize);
-      
       const cleanupLoading = electronAPI.onBrowserViewLoading((loading) => {
         setIsLoading(loading);
       });
       
       const cleanupError = electronAPI.onBrowserViewError((error) => {
-        showToast(`Load error: ${error}`, 'error');
+        const errorMsg = typeof error === 'object' && error.description 
+          ? `${error.description} (${error.code})` 
+          : String(error);
+        showToast(`Load error: ${errorMsg}`, 'error');
       });
       
-      const handleSidebarToggle = () => {
-        const updateBounds = () => {
-          if (browserContainerRef.current && project) {
-            const rect = browserContainerRef.current.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0) {
-              const bounds = {
-                x: Math.round(rect.x),
-                y: Math.round(rect.y),
-                width: Math.round(rect.width),
-                height: Math.round(rect.height)
-              };
-              electronAPI.browserViewUpdateBounds(bounds);
-            }
-          }
-        };
-        
-        setTimeout(updateBounds, 350);
-      };
-      
-      window.addEventListener('sidebar-toggle', handleSidebarToggle);
+      const cleanupNavigate = electronAPI.onBrowserViewNavigate((navigationUrl) => {
+        setUrl(navigationUrl);
+      });
       
       return () => {
         clearTimeout(timer);
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('sidebar-toggle', handleSidebarToggle);
         if (cleanupLoading) cleanupLoading();
         if (cleanupError) cleanupError();
+        if (cleanupNavigate) cleanupNavigate();
       };
-    } else if (!project || !canDisplayWebview || isEditModalOpen) {
+    } else if (!project || !canDisplayWebview || isEditModalOpen || isEditorConfigOpen) {
       if (electronAPI.isAvailable() && loadAttemptedRef.current) {
-        electronAPI.browserViewRemove();
+        electronAPI.browserViewRemove(projectIdRef.current);
         loadAttemptedRef.current = false;
         projectIdRef.current = null;
         projectUrlRef.current = null;
+        setUrl('');
       }
     }
-  }, [project?.id, project?.url, canDisplayWebview, isSidebarCollapsed, isEditModalOpen]);
+  }, [project?.id, project?.url, canDisplayWebview, isSidebarCollapsed, isEditModalOpen, isEditorConfigOpen]);
 
   useEffect(() => {
-    if (browserContainerRef.current && project && canDisplayWebview) {
-      const timer = setTimeout(() => {
-        if (browserContainerRef.current) {
-          const rect = browserContainerRef.current.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            const bounds = {
-              x: Math.round(rect.x),
-              y: Math.round(rect.y),
-              width: Math.round(rect.width),
-              height: Math.round(rect.height)
-            };
-            electronAPI.browserViewUpdateBounds(bounds);
-          }
-        }
-      }, 100);
-      return () => clearTimeout(timer);
+    if (project?.url && project.url !== url) {
+      setUrl(project.url);
+    } else if (!project) {
+      setUrl('');
     }
-  }, [selectedDevice, project?.id, canDisplayWebview]);
+  }, [project?.id, project?.url]);
 
   const handleCopyUrl = () => {
       navigator.clipboard.writeText(url);
       showToast('URL copied to clipboard', 'success');
   };
 
-  const handleOpenDevTools = () => {
-    if (electronAPI.isAvailable()) {
-      electronAPI.browserViewDevTools();
-    } else {
+  const handleOpenDevTools = async () => {
+    const success = await toggleDevTools();
+    if (!success) {
       showToast('DevTools not available', 'info');
     }
   };
@@ -238,43 +189,57 @@ export const BrowserView = ({
       onUpdateProject(project.id, { url: targetUrl });
     }
     
-    if (electronAPI.isAvailable() && browserContainerRef.current) {
-      const rect = browserContainerRef.current.getBoundingClientRect();
-      const bounds = {
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      };
-      
-      setIsLoading(true);
-      electronAPI.browserViewLoad(targetUrl, bounds).then(result => {
-        if (!result.success) {
-          showToast(`Failed to load: ${result.error}`, 'error');
-        }
-        setIsLoading(false);
-      });
+    if (electronAPI.isAvailable()) {
+      const bounds = calculateBrowserViewBounds(browserContainerRef);
+      if (bounds) {
+        setIsLoading(true);
+        electronAPI.browserViewLoad(targetUrl, bounds).then(result => {
+          if (!result.success) {
+            showToast(`Failed to load: ${result.error}`, 'error');
+          }
+          setIsLoading(false);
+        });
+      }
     }
   };
-
-  if (!project) {
-    return <Dashboard 
-      projects={projects} 
-      onSelectProject={onSelectProject} 
-      onOpenEdit={onOpenEdit}
-      onDeleteProject={onDeleteProject}
-      showToast={showToast}
-    />;
-  }
-
-  const isRunning = canDisplayWebview;
 
   return (
     <>
     <div className="flex-1 h-screen flex flex-col bg-zinc-50 dark:bg-[#111111] overflow-hidden transition-colors duration-300">
-      <div className="flex-1 bg-white dark:bg-[#1c1c1f] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] border-l border-zinc-200 dark:border-white/5 relative transition-colors duration-300">
-        
-        <div className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-white dark:bg-[#1c1c1f] transition-colors">
+      {openTabs.length > 0 && (
+        <TabsBar 
+          tabs={openTabs}
+          activeTabId={activeTabId}
+          projects={projects}
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+        />
+      )}
+      
+      <div 
+        className={`flex-1 overflow-hidden flex-col transition-opacity duration-300 ${
+          !project 
+            ? 'flex opacity-100' 
+            : 'absolute inset-0 invisible opacity-0 pointer-events-none z-[-1]'
+        }`}
+      >
+        <Dashboard 
+          projects={projects} 
+          onSelectProject={onSelectProject} 
+          onOpenEdit={onOpenEdit}
+          onDeleteProject={onDeleteProject}
+          showToast={showToast}
+        />
+      </div>
+      
+      <div 
+        className={`flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-[#111111] ${
+          project 
+            ? 'flex opacity-100 relative z-10' 
+            : 'absolute inset-0 invisible opacity-0 pointer-events-none z-[-1]'
+        }`}
+      >
+      <div className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-white dark:bg-[#1c1c1f] transition-colors">
             <BrowserToolbar 
               isSidebarCollapsed={isSidebarCollapsed}
               onToggleSidebar={onToggleSidebar}
@@ -302,43 +267,33 @@ export const BrowserView = ({
               onSelectDevice={setSelectedDevice}
             />
 
-            <button 
-              onClick={() => {
-                if (project && project.path) {
-                  const editorConfig = storage.get('editorConfig', { command: 'code', args: ['{path}'] });
-                  const command = editorConfig.command;
-                  const args = editorConfig.args.map(arg => arg.replace('{path}', project.path));
-                  electronAPI.openEditor(command, args).then(result => {
-                    if (result.success) {
-                      showToast('编辑器已打开', 'success');
-                    } else {
-                      showToast(`打开编辑器失败: ${result.error}`, 'error');
-                    }
-                  });
-                } else {
-                  showToast('项目路径未设置', 'error');
-                }
-              }}
+            <Tooltip message="在编辑器中打开项目" position="top">
+              <button 
+                onClick={() => project && openEditor(project)}
                 className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
-              title="在编辑器中打开项目"
-            >
+              >
                 <Code size={18} />
-             </button>
-            <button 
-              onClick={() => setShowTerminal(!showTerminal)}
-              className={`hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 ${showTerminal ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
-              title="打开终端"
-            >
-              <Terminal size={18} />
-            </button>
-            <button 
-              onClick={handleOpenDevTools}
-              className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
-              title="打开浏览器控制台"
-            >
-              <Monitor size={18} />
-            </button>
-        </div>
+              </button>
+            </Tooltip>
+            <Tooltip message={isDevToolsOpen ? "关闭浏览器控制台" : "打开浏览器控制台"} position="top">
+              <button 
+                onClick={handleOpenDevTools}
+                className={`hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 ${isDevToolsOpen ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
+              >
+                <TerminalSquare size={18} />
+              </button>
+            </Tooltip>
+            <Tooltip message="截图" position="top">
+              <button 
+                onClick={captureScreenshot}
+                className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
+              >
+                <Camera size={18} />
+              </button>
+            </Tooltip>
+      </div>
+      
+      <div className="flex-1 bg-white dark:bg-[#1c1c1f] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] border-l border-zinc-200 dark:border-white/5 relative transition-colors duration-300">
 
           <BrowserContent 
             browserContainerRef={browserContainerRef}
@@ -347,27 +302,12 @@ export const BrowserView = ({
             requiresLocalService={requiresLocalService}
             isLoading={isLoading}
             project={project}
-            onStatusChange={onStatusChange}
             onOpenEdit={onOpenEdit}
             showToast={showToast}
           />
-
-          <TerminalPanel 
-            showTerminal={showTerminal}
-            terminalLogs={terminalLogs}
-            project={project}
-            onClear={() => setTerminalLogs([])}
-            onClose={() => setShowTerminal(false)}
-            onAddLog={(log) => setTerminalLogs(prev => [...prev, log])}
-          />
         </div>
       </div>
-
-      <EditorConfigModal
-        isOpen={isEditorConfigOpen}
-        onClose={() => setIsEditorConfigOpen(false)}
-        showToast={showToast}
-      />
+    </div>
     </>
   );
 };

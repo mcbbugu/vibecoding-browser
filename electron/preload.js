@@ -16,13 +16,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   
   // BrowserView API
-  browserViewLoad: (url, bounds) => ipcRenderer.invoke('browser-view-load', url, bounds),
-  browserViewRemove: () => ipcRenderer.invoke('browser-view-remove'),
+  browserViewLoad: (url, bounds, projectId) => ipcRenderer.invoke('browser-view-load', url, bounds, projectId),
+  browserViewRemove: (projectId) => ipcRenderer.invoke('browser-view-remove', projectId),
   browserViewUpdateBounds: (bounds) => ipcRenderer.invoke('browser-view-update-bounds', bounds),
   browserViewReload: () => ipcRenderer.invoke('browser-view-reload'),
   browserViewGoBack: () => ipcRenderer.invoke('browser-view-go-back'),
   browserViewGoForward: () => ipcRenderer.invoke('browser-view-go-forward'),
   browserViewDevTools: () => ipcRenderer.invoke('browser-view-devtools'),
+  browserViewIsDevToolsOpened: () => ipcRenderer.invoke('browser-view-is-devtools-opened'),
+  
+  captureScreenshot: () => ipcRenderer.invoke('capture-screenshot'),
+  
+  browserViewFind: (text, options) => ipcRenderer.invoke('browser-view-find', text, options),
+  browserViewStopFind: (action) => ipcRenderer.invoke('browser-view-stop-find', action),
+  browserViewClearCache: () => ipcRenderer.invoke('browser-view-clear-cache'),
+  
+  browserViewCanGoBack: () => ipcRenderer.invoke('browser-view-can-go-back'),
+  browserViewCanGoForward: () => ipcRenderer.invoke('browser-view-can-go-forward'),
+  browserViewCopy: () => ipcRenderer.invoke('browser-view-copy'),
+  browserViewPaste: () => ipcRenderer.invoke('browser-view-paste'),
+  browserViewSelectAll: () => ipcRenderer.invoke('browser-view-select-all'),
+  browserViewViewSource: () => ipcRenderer.invoke('browser-view-view-source'),
+  browserViewSaveAs: () => ipcRenderer.invoke('browser-view-save-as'),
+  browserViewPrint: () => ipcRenderer.invoke('browser-view-print'),
+  browserViewGetPageInfo: () => ipcRenderer.invoke('browser-view-get-page-info'),
   
   // 监听 BrowserView 事件
   onBrowserViewLoading: (callback) => {
@@ -32,6 +49,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onBrowserViewError: (callback) => {
     ipcRenderer.on('browser-view-error', (event, error) => callback(error));
     return () => ipcRenderer.removeAllListeners('browser-view-error');
+  },
+  
+  onBrowserViewNavigate: (callback) => {
+    ipcRenderer.on('browser-view-navigate', (event, url) => callback(url));
+    return () => ipcRenderer.removeAllListeners('browser-view-navigate');
   },
 
   onGlobalShortcut: (callback) => {

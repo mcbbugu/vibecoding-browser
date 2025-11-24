@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { storage } from '../utils/storage';
 import { electronAPI } from '../utils/electron';
-import { SPACES } from '../constants';
 import { CMD_S_DOUBLE_INTERVAL } from '../utils/constants';
 
 const AppContext = createContext(null);
@@ -15,16 +14,10 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  const initialSpaces = storage.get('spaces', SPACES);
-  const spacesToUse = initialSpaces.length > 0 ? initialSpaces : [];
-  
-  const [spaces, setSpaces] = useState(spacesToUse);
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSpaceId, setActiveSpaceId] = useState(() => {
-    return storage.get('activeSpaceId') || (spacesToUse.length > 0 ? spacesToUse[0].id : null);
-  });
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const [openTabs, setOpenTabs] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUrlInputModalOpen, setIsUrlInputModalOpen] = useState(false);
@@ -74,14 +67,6 @@ export const AppProvider = ({ children }) => {
     }
   }, [projects, isLoading]);
 
-  useEffect(() => {
-    storage.set('spaces', spaces);
-  }, [spaces]);
-
-  useEffect(() => {
-    storage.set('activeSpaceId', activeSpaceId);
-  }, [activeSpaceId]);
-
   const showToast = useCallback((message, type = 'info') => {
     setToast({ id: Date.now().toString(), message, type });
   }, []);
@@ -104,16 +89,35 @@ export const AppProvider = ({ children }) => {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
+  const addTab = useCallback((projectId) => {
+    setOpenTabs(prev => {
+      if (prev.includes(projectId)) return prev;
+      return [...prev, projectId];
+    });
+    setActiveProjectId(projectId);
+  }, []);
+
+  const closeTab = useCallback((projectId) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(id => id !== projectId);
+      if (activeProjectId === projectId && newTabs.length > 0) {
+        setActiveProjectId(newTabs[newTabs.length - 1]);
+      } else if (newTabs.length === 0) {
+        setActiveProjectId(null);
+      }
+      return newTabs;
+    });
+  }, [activeProjectId]);
+
   const value = {
-    spaces,
-    setSpaces,
     projects,
     setProjects,
     isLoading,
-    activeSpaceId,
-    setActiveSpaceId,
     activeProjectId,
     setActiveProjectId,
+    openTabs,
+    addTab,
+    closeTab,
     isSearchOpen,
     setIsSearchOpen,
     isEditModalOpen,

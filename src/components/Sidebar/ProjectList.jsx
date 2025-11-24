@@ -1,6 +1,5 @@
 import React from 'react';
-import { getIconForType, getProjectCategory } from '../../constants';
-import { Play, Square, RefreshCw, Link2 } from 'lucide-react';
+import { getProjectCategory } from '../../constants';
 
 const CATEGORY_STYLES = {
   local: {
@@ -23,7 +22,6 @@ export const ProjectList = ({
   projects, 
   activeProjectId, 
   onSelectProject, 
-  onToggleStatus,
   onContextMenu,
   isCollapsed 
 }) => {
@@ -56,7 +54,6 @@ export const ProjectList = ({
                 </div>
               ) : (
                 categoryProjects.map(project => {
-                  const Icon = getIconForType(project.type);
                   const isActive = activeProjectId === project.id;
                   return (
                     <div 
@@ -72,44 +69,38 @@ export const ProjectList = ({
                       onClick={() => onSelectProject(project.id)}
                       title={isCollapsed ? project.name : ''}
                     >
-                      {!isCollapsed && (
-                        <div 
-                          className="relative flex items-center justify-center w-5 h-5 shrink-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleStatus(project.id);
-                          }}
-                        >
-                          <div className={`
-                            absolute inset-0 rounded-md transition-opacity duration-300
-                            ${project.status === 'running' ? 'bg-emerald-500/10 dark:bg-emerald-500/20' : 'bg-transparent'}
-                          `} />
-                          
-                          <div className={`
-                            w-2 h-2 rounded-full transition-all duration-300 shadow-sm
-                            ${project.status === 'running' ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-zinc-300 dark:bg-zinc-600'}
-                            ${project.status === 'error' ? 'bg-rose-500 shadow-rose-500/50' : ''}
-                            group-hover:opacity-0
-                          `} />
-
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100">
-                            {project.status === 'running' ? (
-                              <Square size={10} className="fill-current text-rose-500" />
-                            ) : (
-                              <Play size={10} className="fill-current text-emerald-500 ml-0.5" />
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Icon size={16} className={`shrink-0 ${isActive ? 'text-indigo-500' : 'text-zinc-400'}`} />
                         {!isCollapsed && (
                           <>
-                            <span className="text-sm font-medium truncate flex-1">{project.name}</span>
-                            {project.boundProjectId && (
-                              <Link2 size={12} className="shrink-0 text-zinc-400" />
-                            )}
+                            <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
+                              <div className={`
+                                w-2 h-2 rounded-full transition-all duration-300 shadow-sm
+                                ${project.status === 'running' ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-zinc-300 dark:bg-zinc-600'}
+                                ${project.status === 'error' ? 'bg-rose-500 shadow-rose-500/50' : ''}
+                              `} />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col">
+                              <span className="text-sm font-medium truncate">{project.name}</span>
+                              {project.url && (() => {
+                                try {
+                                  const url = new URL(project.url);
+                                  const host = url.hostname;
+                                  const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+                                  return (
+                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate mt-0.5">
+                                      {host}:{port}
+                                    </span>
+                                  );
+                                } catch {
+                                  const displayUrl = project.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                                  return (
+                                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate mt-0.5">
+                                      {displayUrl}
+                                    </span>
+                                  );
+                                }
+                              })()}
+                            </div>
                           </>
                         )}
                       </div>

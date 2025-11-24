@@ -3,7 +3,7 @@ import { X, Monitor, Globe } from 'lucide-react';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
 
-export const UrlInputModal = ({ isOpen, onClose, onSave, activeSpaceId }) => {
+export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('online');
   const [localIPs, setLocalIPs] = useState(['localhost', '127.0.0.1']);
@@ -79,7 +79,6 @@ export const UrlInputModal = ({ isOpen, onClose, onSave, activeSpaceId }) => {
       url: finalUrl,
       port: finalPort,
       status: 'stopped',
-      space: activeSpaceId,
       path: '',
       type: 'web',
       note: '',

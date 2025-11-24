@@ -34,26 +34,7 @@ const getHostname = (url = '') => {
 
 const getStatusStyle = (status) => STATUS_STYLES[status] || STATUS_STYLES.stopped;
 
-export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPorts, onOpenEdit, onDeleteProject, showToast }) => {
-  const [contextMenu, setContextMenu] = useState(null);
-  const runningProjects = projects.filter(p => p.status === 'running');
-  const groupedProjects = React.useMemo(() => {
-    const result = { local: [], online: [] };
-    projects.forEach(project => {
-      const category = getProjectCategory(project);
-      if (category === 'local') {
-        result.local.push(project);
-      } else {
-        result.online.push(project);
-      }
-    });
-    const sorter = (a, b) => Number(b.status === 'running') - Number(a.status === 'running');
-    result.local.sort(sorter);
-    result.online.sort(sorter);
-    return result;
-  }, [projects]);
-
-  const PreviewCard = ({ project, category }) => {
+const PreviewCard = React.memo(({ project, category, onSelectProject, setContextMenu }) => {
     const host = getHostname(project.url);
     const Icon = CATEGORY_CONFIG[category]?.icon || Globe;
     const gradient = CATEGORY_CONFIG[category]?.gradient || CATEGORY_CONFIG.online.gradient;
@@ -63,25 +44,33 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
     const isLocal = category === 'local';
     const timeoutRef = React.useRef(null);
     const iframeRef = React.useRef(null);
+    const containerRef = React.useRef(null);
     const lastUrlRef = React.useRef(null);
+    const hasLoadedRef = React.useRef(false);
     
     const shouldPreview = project.url && ((isLocal && project.status === 'running') || (!isLocal));
     const canPreview = shouldPreview && !previewError;
 
     React.useEffect(() => {
-      if (lastUrlRef.current !== project.url) {
+      const urlChanged = lastUrlRef.current !== project.url;
+      
+      if (urlChanged) {
         setPreviewError(false);
-        lastUrlRef.current = project.url;
-      }
-
-      if (shouldPreview && project.url) {
         setIsLoading(true);
+        hasLoadedRef.current = false;
+        lastUrlRef.current = project.url;
         
-        timeoutRef.current = setTimeout(() => {
+        if (shouldPreview && project.url) {
+          timeoutRef.current = setTimeout(() => {
+            if (!hasLoadedRef.current) {
+              setIsLoading(false);
+              setPreviewError(true);
+            }
+          }, 5000);
+        } else {
           setIsLoading(false);
-          setPreviewError(true);
-        }, 5000);
-      } else {
+        }
+      } else if (!shouldPreview) {
         setIsLoading(false);
       }
 
@@ -96,6 +85,7 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      hasLoadedRef.current = true;
       setIsLoading(false);
       setPreviewError(false);
     };
@@ -108,6 +98,40 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
       setIsLoading(false);
     };
 
+    React.useEffect(() => {
+      if (!canPreview || !project.url) return;
+      if (!containerRef.current) return;
+      if (iframeRef.current) return;
+
+      const iframe = document.createElement('iframe');
+      iframeRef.current = iframe;
+      iframe.src = project.url;
+      iframe.style.border = 'none';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.transform = 'scale(0.5)';
+      iframe.style.transformOrigin = 'top left';
+      iframe.style.width = '200%';
+      iframe.style.height = '200%';
+      iframe.sandbox = 'allow-same-origin allow-scripts';
+      iframe.loading = 'lazy';
+
+      iframe.addEventListener('load', handleIframeLoad);
+      iframe.addEventListener('error', handleIframeError);
+
+      containerRef.current.appendChild(iframe);
+
+      return () => {
+        if (iframeRef.current) {
+          iframeRef.current.removeEventListener('load', handleIframeLoad);
+          iframeRef.current.removeEventListener('error', handleIframeError);
+          if (iframeRef.current.parentNode) {
+            iframeRef.current.parentNode.removeChild(iframeRef.current);
+          }
+          iframeRef.current = null;
+        }
+      };
+    }, [canPreview, project.url]);
+
     const handleContextMenu = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -116,44 +140,6 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
         y: e.clientY,
         projectId: project.id
       });
-    };
-
-    const handleContextMenuAction = (action, projectId) => {
-      setContextMenu(null);
-      switch(action) {
-        case 'toggle':
-          break;
-        case 'open':
-          if (project.url) {
-            window.open(project.url, '_blank');
-          }
-          break;
-        case 'finder':
-          const targetProject = projects.find(p => p.id === projectId);
-          if (targetProject && targetProject.path) {
-            electronAPI.openFolder(targetProject.path).then(result => {
-              if (!result.success) {
-                showToast(`Failed to open folder: ${result.error}`, 'error');
-              }
-            });
-          } else {
-            showToast('Project path not set', 'error');
-          }
-          break;
-        case 'edit':
-          if (onOpenEdit) onOpenEdit(projectId);
-          break;
-        case 'delete':
-          if (onDeleteProject) {
-            const targetProject = projects.find(p => p.id === projectId);
-            if (targetProject && window.confirm(`确定要删除项目 "${targetProject.name}" 吗？`)) {
-              onDeleteProject(projectId);
-            }
-          }
-          break;
-        default:
-          break;
-      }
     };
 
     return (
@@ -182,22 +168,9 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
                 </div>
               )}
               {!previewError && (
-                <iframe
-                  ref={iframeRef}
-                  src={project.url}
+                <div
+                  ref={containerRef}
                   className="w-full h-full"
-                  style={{ 
-                    border: 'none', 
-                    pointerEvents: 'none',
-                    transform: 'scale(0.5)',
-                    transformOrigin: 'top left',
-                    width: '200%',
-                    height: '200%'
-                  }}
-                  onLoad={handleIframeLoad}
-                  onError={handleIframeError}
-                  sandbox="allow-same-origin allow-scripts"
-                  loading="lazy"
                 />
               )}
               {previewError && (
@@ -262,17 +235,33 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
           </div>
         </div>
       </button>
-      {contextMenu && contextMenu.projectId === project.id && (
-        <ContextMenu
-          position={contextMenu}
-          project={project}
-          onClose={() => setContextMenu(null)}
-          onAction={handleContextMenuAction}
-        />
-      )}
       </div>
     );
-  };
+}, (prevProps, nextProps) => {
+  return prevProps.project.id === nextProps.project.id &&
+         prevProps.project.url === nextProps.project.url &&
+         prevProps.project.status === nextProps.project.status &&
+         prevProps.category === nextProps.category;
+});
+
+export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPorts, onOpenEdit, onDeleteProject, showToast }) => {
+  const [contextMenu, setContextMenu] = useState(null);
+  const runningProjects = projects.filter(p => p.status === 'running');
+  const groupedProjects = React.useMemo(() => {
+    const result = { local: [], online: [] };
+    projects.forEach(project => {
+      const category = getProjectCategory(project);
+      if (category === 'local') {
+        result.local.push(project);
+      } else {
+        result.online.push(project);
+      }
+    });
+    const sorter = (a, b) => Number(b.status === 'running') - Number(a.status === 'running');
+    result.local.sort(sorter);
+    result.online.sort(sorter);
+    return result;
+  }, [projects]);
 
   const renderSection = (category) => {
     const projectsInCategory = groupedProjects[category];
@@ -309,7 +298,13 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
         {projectsInCategory.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projectsInCategory.map(project => (
-              <PreviewCard key={project.id} project={project} category={category} />
+              <PreviewCard 
+                key={project.id} 
+                project={project} 
+                category={category}
+                onSelectProject={onSelectProject}
+                setContextMenu={setContextMenu}
+              />
             ))}
           </div>
         ) : (

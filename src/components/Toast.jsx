@@ -18,7 +18,7 @@ export const Toast = ({ toast, onClose }) => {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 animate-slide-down">
       <div className="bg-white dark:bg-[#27272a] text-zinc-800 dark:text-white px-4 py-3 rounded-full shadow-2xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 min-w-[300px]">
         {getIcon()}
         <span className="text-sm font-medium flex-1">{toast.message}</span>

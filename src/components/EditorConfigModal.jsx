@@ -48,6 +48,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
   const presetEditors = [
     { name: 'VS Code', command: 'code', args: ['{path}'] },
     { name: 'Cursor', command: 'cursor', args: ['{path}'] },
+    { name: 'Windsurf', command: 'windsurf', args: ['{path}'] },
     { name: 'Sublime Text', command: 'subl', args: ['{path}'] },
     { name: 'Atom', command: 'atom', args: ['{path}'] },
     { name: 'WebStorm', command: 'webstorm', args: ['{path}'] },
@@ -93,6 +94,12 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
         </div>
 
         <div className="p-6 space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              <strong>使用说明：</strong>确保编辑器命令已添加到系统 PATH 中。在终端运行 <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">which {editorConfig.command || 'code'}</code> 检查命令是否可用。如果找不到命令，请参考编辑器的安装文档配置 PATH。
+            </p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
               预设编辑器
@@ -125,7 +132,11 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
               placeholder="例如: code, cursor, subl"
               className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <p className="text-xs text-zinc-400 mt-1">命令名称（需要在系统PATH中）</p>
+            <p className="text-xs text-zinc-400 mt-1">
+              命令名称（需要在系统 PATH 中）。如果命令不存在，请：
+              <br />• macOS: 在终端运行 <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">echo $PATH</code> 查看 PATH
+              <br />• 将编辑器添加到 PATH 或使用完整路径（如 <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">/Applications/Cursor.app/Contents/Resources/app/bin/cursor</code>）
+            </p>
           </div>
 
           <div>
