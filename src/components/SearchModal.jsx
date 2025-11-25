@@ -1,27 +1,62 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, CornerDownLeft, Command } from 'lucide-react';
+import { Search, CornerDownLeft, Command, Plus } from 'lucide-react';
 
-export const SearchModal = ({ isOpen, onClose, projects, onSelectProject }) => {
+const isUrl = (str) => {
+  return str.includes('.') || str.includes(':') || str.startsWith('localhost');
+};
+
+export const SearchModal = ({ isOpen, onClose, projects, onSelectProject, onQuickNavigate }) => {
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      setQuery('');
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    
     const handleKeyDown = (e) => {
-        if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+      }
+      if (e.key === 'Enter' && query.trim() && isUrl(query)) {
+        const filtered = projects.filter(p => 
+          p.name?.toLowerCase().includes(query.toLowerCase()) || 
+          (p.path && p.path.toLowerCase().includes(query.toLowerCase())) ||
+          (p.url && p.url.toLowerCase().includes(query.toLowerCase()))
+        );
+        if (filtered.length === 0 && onQuickNavigate) {
+          onQuickNavigate(query.trim());
+          onClose();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, query, projects, onClose, onQuickNavigate]);
 
   if (!isOpen) return null;
 
   const filteredProjects = projects.filter(p => 
-    p.name.toLowerCase().includes(query.toLowerCase()) || 
-    p.path.toLowerCase().includes(query.toLowerCase())
+    p.name?.toLowerCase().includes(query.toLowerCase()) || 
+    (p.path && p.path.toLowerCase().includes(query.toLowerCase())) ||
+    (p.url && p.url.toLowerCase().includes(query.toLowerCase()))
   );
+  
+  const showCreateNew = query.trim() && isUrl(query);
+  
+  const handleCreateNew = () => {
+    if (onQuickNavigate && query.trim()) {
+      onQuickNavigate(query.trim());
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-zinc-50/80 dark:bg-black/60 backdrop-blur-sm transition-all duration-300" onClick={onClose}>
@@ -35,7 +70,7 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject }) => {
             ref={inputRef}
             type="text"
             className="flex-1 bg-transparent border-none outline-none text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 text-xl font-light"
-            placeholder="Search projects..."
+            placeholder="搜索已有项目或输入 URL 新建..."
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
@@ -43,14 +78,33 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject }) => {
         </div>
         
         <div className="max-h-[360px] overflow-y-auto p-2 scroll-smooth">
-            {filteredProjects.length === 0 ? (
+            {showCreateNew && (
+              <div className="mb-2">
+                <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">快速创建</div>
+                <button
+                  onClick={handleCreateNew}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl group transition-colors text-left border border-dashed border-indigo-300 dark:border-indigo-700"
+                >
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Plus size={16} className="text-white" />
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">创建并打开</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">{query}</span>
+                  </div>
+                  <CornerDownLeft size={16} className="text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-500 transition-colors" />
+                </button>
+              </div>
+            )}
+            
+            {filteredProjects.length === 0 && !showCreateNew ? (
                 <div className="py-12 text-center">
-                    <p className="text-zinc-500 dark:text-zinc-600 mb-2">No matching projects found.</p>
-                    <button className="text-indigo-500 hover:underline text-sm">Create new project?</button>
+                    <p className="text-zinc-500 dark:text-zinc-600 mb-1">未找到匹配的项目</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">输入 URL 创建新项目</p>
                 </div>
-            ) : (
+            ) : filteredProjects.length > 0 ? (
                 <div className="space-y-1">
-                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">Top Results</div>
+                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">搜索结果</div>
                     {filteredProjects.map((project) => (
                         <button
                             key={project.id}
@@ -73,16 +127,17 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject }) => {
                         </button>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
         
         <div className="px-5 py-3 bg-zinc-50 dark:bg-[#151518] border-t border-zinc-100 dark:border-white/5 flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
             <div className="flex gap-4">
-                <span className="flex items-center gap-1"><kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">↑↓</kbd> Navigate</span>
-                <span className="flex items-center gap-1"><kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">↵</kbd> Select</span>
+                <span className="flex items-center gap-1"><kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">↑↓</kbd> 导航</span>
+                <span className="flex items-center gap-1"><kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">↵</kbd> 选择</span>
             </div>
-            <div className="flex items-center gap-1.5 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-pointer transition-colors">
-                <Command size={10} /> <span>More Actions</span>
+            <div className="flex items-center gap-1.5">
+                <kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">⌘T</kbd>
+                <span>打开搜索</span>
             </div>
         </div>
       </div>

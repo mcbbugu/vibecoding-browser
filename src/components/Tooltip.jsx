@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Z_INDEX } from '../utils/constants';
 
 export const Tooltip = ({ children, message, position = 'top' }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -65,10 +66,11 @@ export const Tooltip = ({ children, message, position = 'top' }) => {
       {isVisible && createPortal(
         <div
           ref={tooltipRef}
-          className="fixed z-[100002] px-2 py-1 text-xs font-medium text-white bg-zinc-900 dark:bg-zinc-800 rounded-md shadow-lg pointer-events-none whitespace-nowrap"
+          className="fixed px-2 py-1 text-xs font-medium text-white bg-zinc-900 dark:bg-zinc-800 rounded-md shadow-lg pointer-events-none whitespace-nowrap"
           style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
+            zIndex: Z_INDEX.TOOLTIP
           }}
         >
           {message}

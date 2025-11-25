@@ -17,10 +17,6 @@ export const useShortcuts = () => {
       case 'search':
         setIsSearchOpen(true);
         break;
-      case 'new-tab':
-        setActiveProjectId(null);
-        showToast('New tab opened', 'success');
-        break;
       case 'close-tab':
         if (activeProjectId) {
           setActiveProjectId(null);
@@ -117,8 +113,7 @@ export const useShortcuts = () => {
 
       const key = e.key.toLowerCase();
       const shortcuts = {
-        'k': 'search',
-        't': 'new-tab',
+        't': 'search',
         'w': 'close-tab',
         'r': 'reload',
         'l': 'focus-url',

@@ -22,3 +22,10 @@ export const TOAST_TYPES = {
   WARNING: 'warning'
 };
 
+export const Z_INDEX = {
+  MODAL_BACKDROP: 99999,
+  MODAL_CONTENT: 100000,
+  CONTEXT_MENU: 100001,
+  TOOLTIP: 100002
+};
+

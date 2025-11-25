@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
 import { storage } from '../utils/storage';
+import { Z_INDEX } from '../utils/constants';
 
 export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
   const [editorConfig, setEditorConfig] = useState({
@@ -65,7 +66,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
     <div 
       className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
       style={{ 
-        zIndex: 99999,
+        zIndex: Z_INDEX.MODAL_BACKDROP,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -80,7 +81,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
     >
       <div 
         className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md mx-4 border border-zinc-200 dark:border-zinc-800"
-        style={{ zIndex: 100000 }}
+        style={{ zIndex: Z_INDEX.MODAL_CONTENT }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">

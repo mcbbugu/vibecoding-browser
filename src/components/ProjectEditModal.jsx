@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { X, Save, FolderOpen } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
-import { storage } from '../utils/storage';
+import { Z_INDEX } from '../utils/constants';
 
 export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = [] }) => {
   const getDefaultForm = () => ({
@@ -11,23 +11,20 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
     port: '',
     path: '',
     type: 'web',
-    note: '',
-    editorConfig: null
+    note: ''
   });
 
   const [formData, setFormData] = useState(getDefaultForm());
 
   useEffect(() => {
     if (project) {
-      const globalEditorConfig = storage.get('editorConfig', { command: 'code', args: ['{path}'] });
       setFormData({
         name: project.name || '',
         url: project.url || '',
         port: project.port ?? '',
         path: project.path || '',
         type: project.type || 'web',
-        note: project.note || '',
-        editorConfig: project.editorConfig || null
+        note: project.note || ''
       });
     } else {
       setFormData(getDefaultForm());
@@ -44,8 +41,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
       url: formData.url.trim(),
       port: formData.port === '' ? null : Number(formData.port) || null,
       path: formData.path.trim(),
-      note: formData.note.trim(),
-      editorConfig: formData.editorConfig || undefined
+      note: formData.note.trim()
     };
     onSave(project.id, payload);
     onClose();
@@ -58,91 +54,12 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
     }
   };
 
-  const presetEditors = [
-    { name: 'VS Code', command: 'code', args: ['{path}'] },
-    { name: 'Cursor', command: 'cursor', args: ['{path}'] },
-    { name: 'Windsurf', command: 'windsurf', args: ['{path}'] },
-    { name: 'Sublime Text', command: 'subl', args: ['{path}'] },
-    { name: 'Atom', command: 'atom', args: ['{path}'] },
-    { name: 'WebStorm', command: 'webstorm', args: ['{path}'] },
-  ];
-
-  const getEditorConfig = () => {
-    if (formData.editorConfig) {
-      return formData.editorConfig;
-    }
-    return storage.get('editorConfig', { command: 'code', args: ['{path}'] });
-  };
-
-  const editorConfig = getEditorConfig();
-
-  const handlePresetSelect = (preset) => {
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: {
-        command: preset.command,
-        args: [...preset.args]
-      }
-    }));
-  };
-
-  const handleAddArg = () => {
-    const currentConfig = getEditorConfig();
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: {
-        command: currentConfig.command,
-        args: [...currentConfig.args, '']
-      }
-    }));
-  };
-
-  const handleRemoveArg = (index) => {
-    const currentConfig = getEditorConfig();
-    if (currentConfig.args.length <= 1) return;
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: {
-        command: currentConfig.command,
-        args: currentConfig.args.filter((_, i) => i !== index)
-      }
-    }));
-  };
-
-  const handleArgChange = (index, value) => {
-    const currentConfig = getEditorConfig();
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: {
-        command: currentConfig.command,
-        args: currentConfig.args.map((arg, i) => i === index ? value : arg)
-      }
-    }));
-  };
-
-  const handleCommandChange = (value) => {
-    const currentConfig = getEditorConfig();
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: {
-        command: value,
-        args: currentConfig.args
-      }
-    }));
-  };
-
-  const handleUseGlobalConfig = () => {
-    setFormData(prev => ({
-      ...prev,
-      editorConfig: null
-    }));
-  };
 
   const modalContent = (
     <div 
       className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
       style={{ 
-        zIndex: 99999,
+        zIndex: Z_INDEX.MODAL_BACKDROP,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -157,7 +74,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
     >
       <div 
         className="w-full max-w-lg bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-2xl border border-zinc-200 dark:border-white/10 overflow-hidden"
-        style={{ zIndex: 100000 }}
+        style={{ zIndex: Z_INDEX.MODAL_CONTENT }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/10">
@@ -249,89 +166,6 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
               className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               placeholder="Add notes about this project..."
             />
-          </div>
-
-          <div className="border-t border-zinc-200 dark:border-white/10 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">IDE 配置</label>
-              {formData.editorConfig && (
-                <button
-                  type="button"
-                  onClick={handleUseGlobalConfig}
-                  className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                >
-                  使用全局配置
-                </button>
-              )}
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">预设编辑器</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {presetEditors.map(preset => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => handlePresetSelect(preset)}
-                      className={`px-2 py-1.5 text-xs rounded-lg border transition-colors ${
-                        editorConfig.command === preset.command
-                          ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                          : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-                      }`}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">命令</label>
-                <input
-                  type="text"
-                  value={editorConfig.command}
-                  onChange={(e) => handleCommandChange(e.target.value)}
-                  placeholder="例如: code, cursor, subl"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">参数</label>
-                <div className="space-y-2">
-                  {editorConfig.args.map((arg, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={arg}
-                        onChange={(e) => handleArgChange(index, e.target.value)}
-                        placeholder="例如: {path}"
-                        className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                      />
-                      {editorConfig.args.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveArg(index)}
-                          className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddArg}
-                    className="w-full px-3 py-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Plus size={12} />
-                    添加参数
-                  </button>
-                </div>
-                <p className="text-xs text-zinc-400 mt-1">使用 {'{path}'} 作为项目路径占位符</p>
-              </div>
-            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

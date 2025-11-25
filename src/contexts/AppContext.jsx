@@ -33,6 +33,7 @@ export const AppProvider = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSidebarContentHidden, setIsSidebarContentHidden] = useState(false);
   const [isEditorConfigOpen, setIsEditorConfigOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const lastCmdSPressRef = React.useRef(0);
 
   useEffect(() => {
@@ -136,6 +137,8 @@ export const AppProvider = ({ children }) => {
     setIsSidebarContentHidden,
     isEditorConfigOpen,
     setIsEditorConfigOpen,
+    isSettingsOpen,
+    setIsSettingsOpen,
     showToast,
     handleCmdSPress
   };

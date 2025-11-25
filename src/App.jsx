@@ -5,10 +5,12 @@ import { SearchModal } from './components/SearchModal';
 import { Toast } from './components/Toast';
 import { ProjectEditModal } from './components/ProjectEditModal';
 import { EditorConfigModal } from './components/EditorConfigModal';
+import { SettingsModal } from './components/SettingsModal';
 import { UrlInputModal } from './components/UrlInputModal';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { useProjects } from './hooks/useProjects';
 import { useShortcuts } from './hooks/useShortcuts';
+import { useEditor } from './hooks/useEditor';
 import { getProjectCategory } from './constants';
 
 function AppContent() {
@@ -30,6 +32,8 @@ function AppContent() {
     setEditingProjectId,
     isEditorConfigOpen,
     setIsEditorConfigOpen,
+    isSettingsOpen,
+    setIsSettingsOpen,
     toast,
     setToast,
     isDarkMode,
@@ -48,6 +52,8 @@ function AppContent() {
     handleScanPorts,
     handleQuickNavigate
   } = useProjects();
+
+  const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
 
   useShortcuts();
 
@@ -131,6 +137,8 @@ function AppContent() {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleSidebar}
         isContentHidden={isSidebarContentHidden}
+        onNavigateHome={() => setActiveProjectId(null)}
+        onOpenEditor={openEditor}
       />
       
       <BrowserView 
@@ -157,6 +165,7 @@ function AppContent() {
         onClose={() => setIsSearchOpen(false)}
         projects={projects}
         onSelectProject={handleSelectProject}
+        onQuickNavigate={handleQuickNavigateWithSelect}
       />
 
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
@@ -179,6 +188,14 @@ function AppContent() {
         isOpen={isEditorConfigOpen}
         onClose={() => setIsEditorConfigOpen(false)}
         showToast={showToast}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        showToast={showToast}
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
       />
       
       <style>{`

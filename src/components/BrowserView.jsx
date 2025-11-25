@@ -56,6 +56,8 @@ export const BrowserView = ({
   const { isDevToolsOpen, toggleDevTools } = useDevTools(project);
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
   const { captureScreenshot } = useScreenshot(showToast, project);
+  
+  useBrowserViewBounds(browserContainerRef, [isSidebarCollapsed]);
 
   useEffect(() => {
     if ((isEditModalOpen || isEditorConfigOpen) && electronAPI.isAvailable()) {
@@ -241,16 +243,13 @@ export const BrowserView = ({
       >
       <div className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-white dark:bg-[#1c1c1f] transition-colors">
             <BrowserToolbar 
-              isSidebarCollapsed={isSidebarCollapsed}
-              onToggleSidebar={onToggleSidebar}
-              onSelectProject={onSelectProject}
               onGoBack={handleGoBack}
               onGoForward={handleGoForward}
               onRefresh={handleRefresh}
               isLoading={isLoading}
+              canGoBack={canGoBack}
+              canGoForward={canGoForward}
             />
-          
-          <div className="h-6 w-[1px] bg-zinc-200 dark:bg-white/10 mx-1" />
 
             <AddressBar 
               url={url}
@@ -306,8 +305,8 @@ export const BrowserView = ({
             showToast={showToast}
           />
         </div>
+        </div>
       </div>
-    </div>
     </>
   );
 };

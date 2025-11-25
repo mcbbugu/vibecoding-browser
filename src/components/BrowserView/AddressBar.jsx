@@ -1,5 +1,25 @@
 import React from 'react';
-import { Lock, Copy } from 'lucide-react';
+import { Lock, AlertTriangle, Copy } from 'lucide-react';
+
+const getSecurityIcon = (url) => {
+  if (!url) return null;
+  
+  try {
+    const urlObj = new URL(url);
+    const isSecure = urlObj.protocol === 'https:';
+    const isLocalhost = urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1' || urlObj.hostname.startsWith('192.168.');
+    
+    if (isSecure) {
+      return <Lock size={14} className="text-emerald-500" />;
+    } else if (isLocalhost) {
+      return <Lock size={14} className="text-zinc-400" />;
+    } else {
+      return <AlertTriangle size={14} className="text-amber-500" />;
+    }
+  } catch {
+    return null;
+  }
+};
 
 export const AddressBar = ({ 
   url, 
@@ -10,11 +30,15 @@ export const AddressBar = ({
   projects,
   onSelectProject 
 }) => {
+  const securityIcon = getSecurityIcon(url);
+  
   return (
     <div className="flex-1 max-w-3xl mx-auto group relative">
-      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-        <Lock size={12} className="text-emerald-500" />
-      </div>
+      {securityIcon && (
+        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+          {securityIcon}
+        </div>
+      )}
       <form onSubmit={onUrlSubmit} className="w-full">
         <input 
           type="text"

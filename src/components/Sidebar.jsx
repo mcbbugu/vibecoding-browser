@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ContextMenu } from './ContextMenu';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { ProjectList } from './Sidebar/ProjectList';
 import { SidebarFooter } from './Sidebar/SidebarFooter';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, PanelLeft } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
 import { useApp } from '../contexts/AppContext';
 
@@ -20,10 +20,23 @@ export const Sidebar = ({
   showToast,
   isCollapsed,
   onToggleCollapse,
-  isContentHidden
+  isContentHidden,
+  onNavigateHome,
+  onOpenEditor
 }) => {
-  const { setIsEditorConfigOpen } = useApp();
+  const { setIsEditorConfigOpen, setIsSettingsOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (contextMenu && !e.target.closest('[data-context-menu]')) {
+        setContextMenu(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [contextMenu]);
 
   const handleContextMenu = (e, projectId) => {
     e.preventDefault();
@@ -39,9 +52,24 @@ export const Sidebar = ({
 
   return (
     <>
+      {isCollapsed && (
+        <button
+          onClick={onToggleCollapse}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-r-lg p-2 shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+          title="展开侧边栏"
+        >
+          <PanelLeft size={16} className="text-zinc-600 dark:text-zinc-300" />
+        </button>
+      )}
+      
       <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar border-r border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 z-20 overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-[260px]'}`}>
         
-        {!isCollapsed && <SidebarHeader />}
+        {!isCollapsed && (
+          <SidebarHeader 
+            onNavigateHome={onNavigateHome}
+            onToggleSidebar={onToggleCollapse}
+          />
+        )}
 
         {isCollapsed ? null : isContentHidden ? (
           <div className="flex-1 flex flex-col items-center justify-center text-[11px] uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-600 px-6 text-center">
@@ -71,6 +99,7 @@ export const Sidebar = ({
             <SidebarFooter 
               isDarkMode={isDarkMode}
               onToggleTheme={toggleTheme}
+              onOpenSettings={() => setIsSettingsOpen(true)}
             />
           </>
         )}
@@ -96,18 +125,15 @@ export const Sidebar = ({
                   showToast(`已删除「${project.name}」`, 'info');
                 }
                 break;
-              case 'open':
-                if (project.url) {
-                  window.open(project.url, '_blank');
+              case 'open-ide':
+                if (project.path) {
+                  onOpenEditor(project);
                 }
                 break;
               case 'finder':
                 if (project.path) {
                   electronAPI.openFolder(project.path);
                 }
-                break;
-              case 'settings':
-                setIsEditorConfigOpen(true);
                 break;
             }
             setContextMenu(null);

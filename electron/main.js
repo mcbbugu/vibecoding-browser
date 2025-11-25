@@ -22,8 +22,7 @@ function registerGlobalShortcuts() {
   globalShortcut.unregisterAll();
 
   const shortcuts = [
-    { accelerator: 'CommandOrControl+K', action: 'search' },
-    { accelerator: 'CommandOrControl+T', action: 'new-tab' },
+    { accelerator: 'CommandOrControl+T', action: 'search' },
     { accelerator: 'CommandOrControl+W', action: 'close-tab' },
     { accelerator: 'CommandOrControl+R', action: 'reload' },
     { accelerator: 'CommandOrControl+L', action: 'focus-url' },
@@ -470,8 +469,7 @@ ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
         if (!isCmdOrCtrl) return;
         
         const shortcuts = {
-          'k': 'search',
-          't': 'new-tab',
+          't': 'search',
           'w': 'close-tab',
           'r': 'reload',
           'l': 'focus-url',

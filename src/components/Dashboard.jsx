@@ -320,42 +320,6 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
   return (
     <div className="flex-1 h-full overflow-y-auto p-8 bg-zinc-50 dark:bg-[#111111] transition-colors duration-300 border-0">
       <div className="max-w-5xl mx-auto space-y-10 flex-1">
-        <div className="max-w-2xl mx-auto w-full">
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const input = e.target.elements.url;
-                  if (input.value.trim() && onQuickNavigate) {
-                    onQuickNavigate(input.value.trim());
-                    input.value = '';
-                  }
-                  return false;
-                }}
-                className="relative"
-              >
-                <input
-                  name="url"
-                  type="text"
-              placeholder="输入域名或搜索，即刻保存到列表"
-                data-address-bar="true"
-                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all"
-                  autoFocus
-                />
-              </form>
-              <div className="mt-4 flex items-center justify-center gap-4 text-xs text-zinc-400">
-                <span className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700">⌘T</kbd> 新建
-                </span>
-                <span className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700">⌘L</kbd> 地址栏
-                </span>
-                <span className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-300 dark:border-zinc-700">⌘K</kbd> 搜索
-                </span>
-              </div>
-            </div>
-
         {['local', 'online'].map(renderSection)}
         </div>
         {contextMenu && (
