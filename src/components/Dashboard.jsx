@@ -154,7 +154,7 @@ const PreviewCard = React.memo(({ project, category, onSelectProject, setContext
             e.stopPropagation();
             onSelectProject(project.id);
           }}
-          className="flex flex-col rounded-2xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/5 p-4 hover:border-indigo-400/40 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-left w-full"
+          className="flex flex-col rounded-2xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/5 p-4 hover:border-indigo-400/40 transition-colors duration-200 text-left w-full"
         >
         <div className={`relative w-full aspect-video rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br ${gradient}`}>
           {canPreview && project.url ? (
@@ -181,8 +181,8 @@ const PreviewCard = React.memo(({ project, category, onSelectProject, setContext
                   </div>
                 </div>
               )}
-              <div className="absolute top-3 left-3 inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md text-white/90 z-20">
-                <Icon size={14} />
+              <div className="absolute top-3 left-3 inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md text-white/90 z-20">
+                <Circle size={6} className={project.status === 'running' ? 'text-emerald-500 fill-emerald-500' : 'text-zinc-400 fill-zinc-400'} />
                 {PROJECT_CATEGORY_LABELS[category]}
               </div>
             </>
@@ -196,13 +196,9 @@ const PreviewCard = React.memo(({ project, category, onSelectProject, setContext
                   <p className="text-xs text-white/60">{project.status === 'running' ? '预览不可用' : '服务未运行'}</p>
                 </div>
               </div>
-              <div className="absolute top-3 left-3 inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide text-white/80">
-                <Icon size={14} />
+              <div className="absolute top-3 left-3 inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-white/80">
+                <Circle size={6} className={project.status === 'running' ? 'text-emerald-500 fill-emerald-500' : 'text-zinc-400 fill-zinc-400'} />
                 {PROJECT_CATEGORY_LABELS[category]}
-              </div>
-              <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-xs font-mono text-white/80">
-                <span className="truncate">{host}</span>
-                <ArrowUpRight size={14} />
               </div>
             </>
           )}
@@ -211,27 +207,6 @@ const PreviewCard = React.memo(({ project, category, onSelectProject, setContext
           <div className="min-w-0">
             <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{project.name || host}</p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{project.path || project.url}</p>
-          </div>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${getStatusStyle(project.status)}`}>
-            {project.status || 'stopped'}
-          </span>
-        </div>
-        <div className="mt-4 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-          <div className="flex items-center gap-2">
-            {faviconHost ? (
-              <img
-                src={`https://www.google.com/s2/favicons?domain=${faviconHost}&sz=32`}
-                alt=""
-                className="w-5 h-5 rounded-md bg-white/20"
-              />
-            ) : (
-              <div className="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-800" />
-            )}
-            <span className="truncate">{faviconHost || '未配置域名'}</span>
-          </div>
-          <div className="flex items-center gap-1 text-[10px] font-mono">
-            <Circle size={6} className={project.status === 'running' ? 'text-emerald-500 fill-emerald-500/40' : 'text-zinc-400'} />
-            {project.status === 'running' ? 'Live' : 'Idle'}
           </div>
         </div>
       </button>
@@ -246,6 +221,7 @@ const PreviewCard = React.memo(({ project, category, onSelectProject, setContext
 
 export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPorts, onOpenEdit, onDeleteProject, showToast }) => {
   const [contextMenu, setContextMenu] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const runningProjects = projects.filter(p => p.status === 'running');
   const groupedProjects = React.useMemo(() => {
     const result = { local: [], online: [] };
@@ -263,6 +239,14 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
     return result;
   }, [projects]);
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    if (onScanPorts) {
+      onScanPorts();
+    }
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
   const renderSection = (category) => {
     const projectsInCategory = groupedProjects[category];
     const sectionMeta = CATEGORY_CONFIG[category];
@@ -277,19 +261,61 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
               </span>
               {PROJECT_CATEGORY_LABELS[category]}
             </div>
-            {onScanPorts && category === 'local' && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onScanPorts();
-                }}
-                className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
-                title="扫描端口"
-              >
-                <RefreshCw size={16} />
-              </button>
+            {category === 'local' && (
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onScanPorts) onScanPorts('common');
+                  }}
+                  disabled={isRefreshing}
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+                  title="扫描端口（右键更多选项）"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    const menu = e.currentTarget.nextElementSibling;
+                    if (menu) {
+                      menu.classList.toggle('hidden');
+                    }
+                  }}
+                >
+                  <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                </button>
+                <div className="hidden absolute left-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[180px] z-50">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onScanPorts) onScanPorts('common');
+                      e.currentTarget.parentElement.classList.add('hidden');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  >
+                    快速扫描（常用端口）
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onScanPorts) onScanPorts('development');
+                      e.currentTarget.parentElement.classList.add('hidden');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  >
+                    开发端口扫描（3000-10000）
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onScanPorts) onScanPorts('all');
+                      e.currentTarget.parentElement.classList.add('hidden');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  >
+                    全面扫描（所有常用段）
+                  </button>
+                </div>
+              </div>
             )}
             <p className="text-xs text-zinc-400 dark:text-zinc-500">最近的 {projectsInCategory.length} 个站点</p>
           </div>
@@ -320,6 +346,9 @@ export const Dashboard = ({ projects, onSelectProject, onQuickNavigate, onScanPo
   return (
     <div className="flex-1 h-full overflow-y-auto p-8 bg-zinc-50 dark:bg-[#111111] transition-colors duration-300 border-0">
       <div className="max-w-5xl mx-auto space-y-10 flex-1">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">项目管理</h1>
+        </div>
         {['local', 'online'].map(renderSection)}
         </div>
         {contextMenu && (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, Edit2, Plus } from 'lucide-react';
+import { Z_INDEX } from '../utils/constants';
 
 export const SpaceManageModal = ({ 
   isOpen, 
@@ -57,7 +58,7 @@ export const SpaceManageModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm" style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} onClick={onClose}>
       <div 
         className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md mx-4 border border-zinc-200 dark:border-zinc-800"
         onClick={(e) => e.stopPropagation()}

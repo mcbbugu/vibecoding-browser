@@ -11,6 +11,13 @@ export const electronAPI = {
   saveProjects: safeInvoke('saveProjects', { success: false }),
 
   scanCommonPorts: safeInvoke('scanCommonPorts', []),
+  scanDevelopmentPorts: safeInvoke('scanDevelopmentPorts', []),
+  scanAllPorts: safeInvoke('scanAllPorts', []),
+  
+  onPortScanProgress: (callback) => {
+    if (!window.electronAPI?.onPortScanProgress) return null;
+    return window.electronAPI.onPortScanProgress(callback);
+  },
 
   startService: safeInvoke('startService', { success: false, error: 'Electron API not available' }),
 
@@ -57,6 +64,9 @@ export const electronAPI = {
   browserViewFind: safeInvoke('browserViewFind', { success: false, error: 'Electron API not available' }),
   browserViewStopFind: safeInvoke('browserViewStopFind', { success: false, error: 'Electron API not available' }),
   browserViewClearCache: safeInvoke('browserViewClearCache', { success: false, error: 'Electron API not available' }),
+  browserViewHardReload: safeInvoke('browserViewHardReload', { success: false, error: 'Electron API not available' }),
+  browserViewClearStorage: safeInvoke('browserViewClearStorage', { success: false, error: 'Electron API not available' }),
+  browserViewSetCacheDisabled: safeInvoke('browserViewSetCacheDisabled', { success: false, error: 'Electron API not available' }),
   
   browserViewCanGoBack: safeInvoke('browserViewCanGoBack', { canGoBack: false }),
   browserViewCanGoForward: safeInvoke('browserViewCanGoForward', { canGoForward: false }),
@@ -87,6 +97,8 @@ export const electronAPI = {
     if (!window.electronAPI?.onGlobalShortcut) return null;
     return window.electronAPI.onGlobalShortcut(callback);
   },
+
+  openInTerminal: safeInvoke('openInTerminal', { success: false, error: 'Electron API not available' }),
 
   isAvailable: () => {
     return typeof window !== 'undefined' && !!window.electronAPI;

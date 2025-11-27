@@ -7,13 +7,12 @@ import { ProjectEditModal } from './components/ProjectEditModal';
 import { EditorConfigModal } from './components/EditorConfigModal';
 import { SettingsModal } from './components/SettingsModal';
 import { UrlInputModal } from './components/UrlInputModal';
-import { AppProvider, useApp } from './contexts/AppContext';
+import { useApp } from './contexts/AppContext';
 import { useProjects } from './hooks/useProjects';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useEditor } from './hooks/useEditor';
-import { getProjectCategory } from './constants';
 
-function AppContent() {
+function App() {
   const {
     projects,
     isLoading,
@@ -107,8 +106,10 @@ function AppContent() {
   }, [setIsEditModalOpen, setEditingProjectId]);
 
   const handleQuickNavigateWithSelect = useCallback((input) => {
-    const newProject = handleQuickNavigate(input);
-    addTab(newProject.id);
+    const result = handleQuickNavigate(input);
+    if (result && result.id) {
+      addTab(result.id);
+    }
   }, [handleQuickNavigate, addTab]);
 
   const activeProject = projects.find(p => p.id === activeProjectId);
@@ -139,6 +140,7 @@ function AppContent() {
         isContentHidden={isSidebarContentHidden}
         onNavigateHome={() => setActiveProjectId(null)}
         onOpenEditor={openEditor}
+        onScanPorts={handleScanPorts}
       />
       
       <BrowserView 
@@ -154,6 +156,7 @@ function AppContent() {
         onQuickNavigate={handleQuickNavigateWithSelect}
         onScanPorts={handleScanPorts}
         isEditModalOpen={isEditModalOpen}
+        isSearchOpen={isSearchOpen}
         openTabs={openTabs}
         activeTabId={activeProjectId}
         onSelectTab={handleSelectProject}
@@ -229,14 +232,6 @@ function AppContent() {
         }
       `}</style>
     </div>
-  );
-}
-
-function App() {
-  return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
   );
 }
 

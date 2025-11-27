@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, CornerDownLeft, Command, Plus } from 'lucide-react';
+import { Z_INDEX } from '../utils/constants';
 
 const isUrl = (str) => {
   return str.includes('.') || str.includes(':') || str.startsWith('localhost');
@@ -59,7 +60,7 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject, onQuic
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-zinc-50/80 dark:bg-black/60 backdrop-blur-sm transition-all duration-300" onClick={onClose}>
+    <div className="fixed inset-0 flex items-start justify-center pt-[15vh] bg-zinc-50/80 dark:bg-black/60 backdrop-blur-sm transition-all duration-300" style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} onClick={onClose}>
       <div 
         className="w-full max-w-xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-black/50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}

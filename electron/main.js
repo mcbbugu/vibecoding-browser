@@ -4,8 +4,9 @@ const os = require('os');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const Store = require('electron-store');
-const { scanPort, scanCommonPorts } = require('./services/port-scanner');
+const { scanPort, scanCommonPorts, scanDevelopmentPorts, scanAllPorts } = require('./services/port-scanner');
 const { startService, stopService, getRunningServices, sendTerminalInput } = require('./services/process-manager');
+const { registerTerminalHandlers } = require('./ipc/terminal');
 
 const store = new Store();
 
@@ -123,6 +124,9 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   registerGlobalShortcuts();
+  
+  // 注册终端 IPC 处理器
+  registerTerminalHandlers();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -157,6 +161,20 @@ ipcMain.handle('scan-port', async (event, port) => {
 
 ipcMain.handle('scan-common-ports', async () => {
   return await scanCommonPorts();
+});
+
+ipcMain.handle('scan-development-ports', async (event) => {
+  const results = [];
+  await scanDevelopmentPorts((progress) => {
+    event.sender.send('port-scan-progress', progress);
+  });
+  return results;
+});
+
+ipcMain.handle('scan-all-ports', async (event) => {
+  return await scanAllPorts((progress) => {
+    event.sender.send('port-scan-progress', progress);
+  });
 });
 
 ipcMain.handle('start-service', async (event, projectPath, command) => {
@@ -742,6 +760,51 @@ ipcMain.handle('browser-view-clear-cache', async () => {
     await session.clearCache();
     await session.clearStorageData();
     return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('browser-view-hard-reload', async () => {
+  if (!currentBrowserView) {
+    return { success: false, error: 'BrowserView not found' };
+  }
+  
+  try {
+    const session = currentBrowserView.webContents.session;
+    await session.clearCache();
+    currentBrowserView.webContents.reloadIgnoringCache();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('browser-view-clear-storage', async () => {
+  if (!currentBrowserView) {
+    return { success: false, error: 'BrowserView not found' };
+  }
+  
+  try {
+    const session = currentBrowserView.webContents.session;
+    await session.clearStorageData({
+      storages: ['localstorage', 'cookies', 'sessionstorage']
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('browser-view-set-cache-disabled', async (event, disabled) => {
+  if (!currentBrowserView) {
+    return { success: false, error: 'BrowserView not found' };
+  }
+  
+  try {
+    const session = currentBrowserView.webContents.session;
+    await session.setCacheEnabled(!disabled);
+    return { success: true, disabled };
   } catch (error) {
     return { success: false, error: error.message };
   }

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { electronAPI } from '../utils/electron';
 
@@ -11,6 +11,8 @@ export const useShortcuts = () => {
     showToast,
     handleCmdSPress
   } = useApp();
+  
+  const lastTabDirectionRef = useRef(null);
 
   const handleShortcutAction = useCallback((action) => {
     switch (action) {
@@ -54,14 +56,30 @@ export const useShortcuts = () => {
       case 'next-tab':
         if (openTabs.length > 1) {
           const currentIndex = openTabs.indexOf(activeProjectId);
-          const nextIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
+          if (currentIndex === -1) return;
+          
+          let nextIndex;
+          if (lastTabDirectionRef.current === 'backward') {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
+          } else {
+            nextIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
+          }
+          lastTabDirectionRef.current = 'forward';
           setActiveProjectId(openTabs[nextIndex]);
         }
         break;
       case 'prev-tab':
         if (openTabs.length > 1) {
           const currentIndex = openTabs.indexOf(activeProjectId);
-          const prevIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
+          if (currentIndex === -1) return;
+          
+          let prevIndex;
+          if (lastTabDirectionRef.current === 'forward') {
+            prevIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
+          } else {
+            prevIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
+          }
+          lastTabDirectionRef.current = 'backward';
           setActiveProjectId(openTabs[prevIndex]);
         }
         break;

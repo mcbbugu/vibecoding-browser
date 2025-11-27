@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Monitor, Globe } from 'lucide-react';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
+import { Z_INDEX } from '../utils/constants';
 
 export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
   const [url, setUrl] = useState('');
@@ -97,7 +98,8 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" 
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm" 
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }}
       onClick={handleBackdropClick}
     >
       <div 

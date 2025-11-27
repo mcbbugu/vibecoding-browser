@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Terminal } from 'lucide-react';
+import { Z_INDEX } from '../../utils/constants';
 
 export const TerminalPanel = ({ 
   showTerminal, 
@@ -17,7 +18,7 @@ export const TerminalPanel = ({
   if (!showTerminal) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-zinc-900/95 dark:bg-[#0e0e10]/95 backdrop-blur-xl border-t border-zinc-700 dark:border-white/10 p-0 font-mono text-xs text-zinc-400 overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.3)] transition-all animate-slide-up z-30 flex flex-col">
+    <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-zinc-900/95 dark:bg-[#0e0e10]/95 backdrop-blur-xl border-t border-zinc-700 dark:border-white/10 p-0 font-mono text-xs text-zinc-400 overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.3)] transition-all animate-slide-up flex flex-col" style={{ zIndex: Z_INDEX.TERMINAL }}>
       <div className="flex justify-between items-center px-4 py-2 bg-zinc-800/50 dark:bg-white/5 border-b border-white/5 shrink-0">
         <div className="flex items-center gap-2">
           <Terminal size={12} />

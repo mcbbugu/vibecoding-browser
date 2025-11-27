@@ -5,6 +5,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveProjects: (projects) => ipcRenderer.invoke('save-projects', projects),
   scanPort: (port) => ipcRenderer.invoke('scan-port', port),
   scanCommonPorts: () => ipcRenderer.invoke('scan-common-ports'),
+  scanDevelopmentPorts: () => ipcRenderer.invoke('scan-development-ports'),
+  scanAllPorts: () => ipcRenderer.invoke('scan-all-ports'),
+  onPortScanProgress: (callback) => {
+    ipcRenderer.on('port-scan-progress', (event, progress) => callback(progress));
+    return () => ipcRenderer.removeAllListeners('port-scan-progress');
+  },
   startService: (projectPath, command) => ipcRenderer.invoke('start-service', projectPath, command),
   stopService: (pid) => ipcRenderer.invoke('stop-service', pid),
   getRunningServices: () => ipcRenderer.invoke('get-running-services'),
@@ -30,6 +36,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserViewFind: (text, options) => ipcRenderer.invoke('browser-view-find', text, options),
   browserViewStopFind: (action) => ipcRenderer.invoke('browser-view-stop-find', action),
   browserViewClearCache: () => ipcRenderer.invoke('browser-view-clear-cache'),
+  browserViewHardReload: () => ipcRenderer.invoke('browser-view-hard-reload'),
+  browserViewClearStorage: () => ipcRenderer.invoke('browser-view-clear-storage'),
+  browserViewSetCacheDisabled: (disabled) => ipcRenderer.invoke('browser-view-set-cache-disabled', disabled),
   
   browserViewCanGoBack: () => ipcRenderer.invoke('browser-view-can-go-back'),
   browserViewCanGoForward: () => ipcRenderer.invoke('browser-view-can-go-forward'),
@@ -59,6 +68,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onGlobalShortcut: (callback) => {
     ipcRenderer.on('global-shortcut', (_, action) => callback(action));
     return () => ipcRenderer.removeAllListeners('global-shortcut');
-  }
+  },
+
+  openInTerminal: (cwd) => ipcRenderer.invoke('open-in-terminal', cwd)
 });
 

@@ -119,24 +119,84 @@ export const useProjects = () => {
     }
   }, [projects, setProjects, showToast]);
 
-  const handleScanPorts = useCallback(async () => {
+  const handleScanPorts = useCallback(async (scanType = 'common') => {
     if (!electronAPI.isAvailable()) return;
     
     try {
-      showToast('正在扫描端口...', 'info');
-      const openPorts = await electronAPI.scanCommonPorts();
+      let scanPromise;
+      let progressCleanup;
+      
+      if (scanType === 'all') {
+        showToast('正在扫描所有常用端口...', 'info');
+        
+        // 监听进度
+        progressCleanup = electronAPI.onPortScanProgress?.((progress) => {
+          showToast(`扫描 ${progress.range} (${progress.scanning})...`, 'info');
+        });
+        
+        scanPromise = electronAPI.scanAllPorts();
+      } else if (scanType === 'development') {
+        showToast('正在扫描开发端口...', 'info');
+        
+        progressCleanup = electronAPI.onPortScanProgress?.((progress) => {
+          showToast(`扫描 ${progress.range}...`, 'info');
+        });
+        
+        scanPromise = electronAPI.scanDevelopmentPorts();
+      } else {
+        showToast('正在扫描常用端口...', 'info');
+        scanPromise = electronAPI.scanCommonPorts();
+      }
+      
+      const openPorts = await scanPromise;
+      
+      if (progressCleanup) {
+        progressCleanup();
+      }
       
       setProjects(prev => {
         const updatedProjects = [...prev];
+        const foundPorts = new Set();
         
         openPorts.forEach(openPort => {
-          const port = openPort.port || openPort;
-          const existingProject = updatedProjects.find(p => p.port === port);
+          const port = Number(openPort.port || openPort);
+          if (isNaN(port)) return;
+          
+          foundPorts.add(port);
+          
+          const existingProject = updatedProjects.find(p => {
+            let projectPort = null;
+            
+            if (p.port) {
+              projectPort = Number(p.port);
+            } else if (p.url) {
+              try {
+                const url = new URL(p.url);
+                projectPort = url.port ? Number(url.port) : null;
+                if (!projectPort) {
+                  const match = p.url.match(/:(\d+)/);
+                  if (match) {
+                    projectPort = Number(match[1]);
+                  }
+                }
+              } catch {
+                const match = p.url.match(/:(\d+)/);
+                if (match) {
+                  projectPort = Number(match[1]);
+                }
+              }
+            }
+            
+            return !isNaN(projectPort) && projectPort === port;
+          });
           
           if (existingProject) {
             const index = updatedProjects.indexOf(existingProject);
             if (existingProject.status !== 'running') {
               updatedProjects[index] = { ...existingProject, status: 'running' };
+            }
+            if (!existingProject.port) {
+              updatedProjects[index] = { ...updatedProjects[index], port: port };
             }
           } else {
             const newProject = {
@@ -151,16 +211,12 @@ export const useProjects = () => {
               category: 'local'
             };
             updatedProjects.push(newProject);
-            showToast(`发现端口 ${port} 上的服务`, 'success');
           }
         });
         
         updatedProjects.forEach((project, index) => {
-          const portStillOpen = openPorts.some(op => {
-            const port = op.port || op;
-            return port === project.port;
-          });
-          if (!portStillOpen && project.status === 'running' && project.port) {
+          const projectPort = Number(project.port);
+          if (!isNaN(projectPort) && project.status === 'running' && !foundPorts.has(projectPort)) {
             updatedProjects[index] = { ...project, status: 'stopped' };
           }
         });
@@ -183,19 +239,103 @@ export const useProjects = () => {
       targetUrl = normalizeUrl(targetUrl);
     }
     
-    const newProject = {
-      id: `quick-${Date.now()}`,
-      name: targetUrl.includes('google.com/search') ? 'Search: ' + input : input,
-      url: targetUrl,
-      status: 'running',
-      type: 'web',
-      port: null,
-      category: 'online'
+    const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
+
+    const isLocalHostname = (host = '') => {
+      if (!host) return false;
+      return LOCAL_HOSTS.has(host.toLowerCase());
     };
+
+    const getUrlMeta = (value = '') => {
+      const meta = { hostname: '', port: null };
+      if (!value) return meta;
+
+      const normalize = (input) => {
+        if (!input) return '';
+        return /^https?:\/\//i.test(input) ? input : `http://${input}`;
+      };
+
+      try {
+        const parsed = new URL(normalize(value));
+        meta.hostname = parsed.hostname.toLowerCase();
+        meta.port = parsed.port ? Number(parsed.port) : null;
+      } catch {
+        const hostMatch = value.match(/^([a-z0-9\.\-:_]+)/i);
+        if (hostMatch) {
+          meta.hostname = hostMatch[1]
+            .replace(/:\d+.*/, '')
+            .replace(/\/.*/, '')
+            .toLowerCase();
+        }
+        const portMatch = value.match(/:(\d+)/);
+        if (portMatch) {
+          meta.port = Number(portMatch[1]);
+        }
+      }
+
+      if (!meta.port && meta.hostname && isLocalHostname(meta.hostname)) {
+        meta.port = null;
+      }
+
+      return meta;
+    };
+
+    const targetMeta = getUrlMeta(targetUrl);
+    const targetPort = targetMeta.port;
+    const targetIsLocal = isLocalHostname(targetMeta.hostname);
     
-    setProjects(prev => [...prev, newProject]);
-    showToast('Opening: ' + targetUrl, 'success');
-    return newProject;
+    let resolvedProject = null;
+    
+    setProjects(prev => {
+      const existingProject = prev.find(p => {
+        if (p.url === targetUrl) {
+          return true;
+        }
+        
+        if (!targetPort) {
+          return false;
+        }
+        
+        const projectPort = (() => {
+          if (p.port) {
+            const parsed = Number(p.port);
+            if (!isNaN(parsed)) return parsed;
+          }
+          const meta = getUrlMeta(p.url || '');
+          return meta.port;
+        })();
+        
+        if (!projectPort || projectPort !== targetPort) {
+          return false;
+        }
+        
+        const projectMeta = getUrlMeta(p.url || '');
+        const projectIsLocal = p.category === 'local' || Boolean(p.path) || isLocalHostname(projectMeta.hostname);
+        
+        return projectIsLocal || targetIsLocal;
+      });
+      
+      if (existingProject) {
+        showToast('项目已存在', 'info');
+        resolvedProject = existingProject;
+        return prev;
+      }
+      
+      resolvedProject = {
+        id: `quick-${Date.now()}`,
+        name: targetUrl.includes('google.com/search') ? 'Search: ' + input : input,
+        url: targetUrl,
+        status: 'running',
+        type: 'web',
+        port: targetPort,
+        category: targetIsLocal ? 'local' : 'online'
+      };
+      
+      showToast('Opening: ' + targetUrl, 'success');
+      return [...prev, resolvedProject];
+    });
+    
+    return resolvedProject;
   }, [setProjects, showToast]);
 
   return {

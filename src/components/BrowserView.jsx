@@ -5,7 +5,7 @@ import { AddressBar } from './BrowserView/AddressBar';
 import { DeviceSelector } from './BrowserView/DeviceSelector';
 import { BrowserContent } from './BrowserView/BrowserContent';
 import { TabsBar } from './BrowserView/TabsBar';
-import { Code, TerminalSquare, Camera } from 'lucide-react';
+import { Code, Camera, Bug, RefreshCw, Trash2, ShieldOff } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
@@ -29,6 +29,7 @@ export const BrowserView = ({
   onQuickNavigate, 
   onScanPorts,
   isEditModalOpen,
+  isSearchOpen,
   openTabs = [],
   activeTabId,
   onSelectTab,
@@ -44,6 +45,7 @@ export const BrowserView = ({
   });
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [isCacheDisabled, setIsCacheDisabled] = useState(false);
   const browserContainerRef = React.useRef(null);
   const projectUrlRef = React.useRef(null);
   const projectIdRef = React.useRef(null);
@@ -57,14 +59,15 @@ export const BrowserView = ({
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
   const { captureScreenshot } = useScreenshot(showToast, project);
   
-  useBrowserViewBounds(browserContainerRef, [isSidebarCollapsed]);
+  useBrowserViewBounds(browserContainerRef, [isSidebarCollapsed, selectedDevice]);
+
 
   useEffect(() => {
-    if ((isEditModalOpen || isEditorConfigOpen) && electronAPI.isAvailable()) {
+    if ((isEditModalOpen || isEditorConfigOpen || isSearchOpen) && electronAPI.isAvailable()) {
       electronAPI.browserViewRemove();
       return;
     }
-  }, [isEditModalOpen, isEditorConfigOpen]);
+  }, [isEditModalOpen, isEditorConfigOpen, isSearchOpen]);
 
   useEffect(() => {
     const checkNavigationState = async () => {
@@ -83,7 +86,7 @@ export const BrowserView = ({
   useEffect(() => {
     const projectId = project?.id;
     const projectUrl = project?.url;
-    const shouldLoad = project && canDisplayWebview && projectUrl && !isEditModalOpen && !isEditorConfigOpen;
+    const shouldLoad = project && canDisplayWebview && projectUrl && !isEditModalOpen && !isEditorConfigOpen && !isSearchOpen;
     const urlChanged = projectUrlRef.current !== projectUrl;
     const projectChanged = projectIdRef.current !== projectId;
 
@@ -127,7 +130,7 @@ export const BrowserView = ({
         if (cleanupError) cleanupError();
         if (cleanupNavigate) cleanupNavigate();
       };
-    } else if (!project || !canDisplayWebview || isEditModalOpen || isEditorConfigOpen) {
+    } else if (!project || !canDisplayWebview || isEditModalOpen || isEditorConfigOpen || isSearchOpen) {
       if (electronAPI.isAvailable() && loadAttemptedRef.current) {
         electronAPI.browserViewRemove(projectIdRef.current);
         loadAttemptedRef.current = false;
@@ -136,7 +139,7 @@ export const BrowserView = ({
         setUrl('');
       }
     }
-  }, [project?.id, project?.url, canDisplayWebview, isSidebarCollapsed, isEditModalOpen, isEditorConfigOpen]);
+  }, [project?.id, project?.url, canDisplayWebview, isSidebarCollapsed, isEditModalOpen, isEditorConfigOpen, isSearchOpen]);
 
   useEffect(() => {
     if (project?.url && project.url !== url) {
@@ -201,6 +204,44 @@ export const BrowserView = ({
           }
           setIsLoading(false);
         });
+      }
+    }
+  };
+
+  const handleHardReload = async () => {
+    if (electronAPI.isAvailable()) {
+      setIsLoading(true);
+      const result = await electronAPI.browserViewHardReload();
+      if (result.success) {
+        showToast('已清除缓存并刷新', 'success');
+      } else {
+        showToast(`操作失败: ${result.error}`, 'error');
+      }
+      setTimeout(() => setIsLoading(false), 1000);
+    }
+  };
+
+  const handleClearStorage = async () => {
+    if (electronAPI.isAvailable()) {
+      const result = await electronAPI.browserViewClearStorage();
+      if (result.success) {
+        showToast('已清除 LocalStorage 和 Cookies', 'success');
+        handleRefresh();
+      } else {
+        showToast(`操作失败: ${result.error}`, 'error');
+      }
+    }
+  };
+
+  const handleToggleCacheDisabled = async () => {
+    if (electronAPI.isAvailable()) {
+      const newState = !isCacheDisabled;
+      const result = await electronAPI.browserViewSetCacheDisabled(newState);
+      if (result.success) {
+        setIsCacheDisabled(newState);
+        showToast(newState ? '已禁用缓存' : '已启用缓存', 'success');
+      } else {
+        showToast(`操作失败: ${result.error}`, 'error');
       }
     }
   };
@@ -279,7 +320,7 @@ export const BrowserView = ({
                 onClick={handleOpenDevTools}
                 className={`hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 ${isDevToolsOpen ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
               >
-                <TerminalSquare size={18} />
+                <Bug size={18} />
               </button>
             </Tooltip>
             <Tooltip message="截图" position="top">
@@ -288,6 +329,37 @@ export const BrowserView = ({
                 className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
               >
                 <Camera size={18} />
+              </button>
+            </Tooltip>
+
+            <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+
+            <Tooltip message="清除缓存并刷新 (Cmd+Shift+R)" position="top">
+              <button 
+                onClick={handleHardReload}
+                className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
+              >
+                <RefreshCw size={18} />
+              </button>
+            </Tooltip>
+            <Tooltip message="清除 LocalStorage 和 Cookies" position="top">
+              <button 
+                onClick={handleClearStorage}
+                className="hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5"
+              >
+                <Trash2 size={18} />
+              </button>
+            </Tooltip>
+            <Tooltip message={isCacheDisabled ? "启用缓存" : "禁用缓存"} position="top">
+              <button 
+                onClick={handleToggleCacheDisabled}
+                className={`transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 ${
+                  isCacheDisabled 
+                    ? 'text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300' 
+                    : 'hover:text-zinc-800 dark:hover:text-zinc-200'
+                }`}
+              >
+                <ShieldOff size={18} />
               </button>
             </Tooltip>
       </div>
@@ -304,6 +376,7 @@ export const BrowserView = ({
             onOpenEdit={onOpenEdit}
             showToast={showToast}
           />
+          
         </div>
         </div>
       </div>

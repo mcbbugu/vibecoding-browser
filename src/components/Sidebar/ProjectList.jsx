@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getProjectCategory } from '../../constants';
+import { RefreshCw } from 'lucide-react';
 
 const CATEGORY_STYLES = {
   local: {
@@ -23,9 +24,19 @@ export const ProjectList = ({
   activeProjectId, 
   onSelectProject, 
   onContextMenu,
-  isCollapsed 
+  isCollapsed,
+  onRefresh
 }) => {
   const CATEGORY_ORDER = ['local', 'online'];
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      setIsRefreshing(true);
+      onRefresh();
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4 scrollbar-hide">
@@ -45,6 +56,16 @@ export const ProjectList = ({
                   {categoryProjects.length}
                 </span>
               </div>
+              {category === 'local' && onRefresh && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-50"
+                  title="扫描端口"
+                >
+                  <RefreshCw size={12} className={`text-zinc-400 dark:text-zinc-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+              )}
             </div>
 
             <div className="space-y-1.5">

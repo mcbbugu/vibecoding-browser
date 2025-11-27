@@ -6,6 +6,7 @@ import { SidebarFooter } from './Sidebar/SidebarFooter';
 import { Search, RefreshCw, PanelLeft } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
 import { useApp } from '../contexts/AppContext';
+import { Z_INDEX } from '../utils/constants';
 
 export const Sidebar = ({
   projects,
@@ -22,7 +23,8 @@ export const Sidebar = ({
   onToggleCollapse,
   isContentHidden,
   onNavigateHome,
-  onOpenEditor
+  onOpenEditor,
+  onScanPorts
 }) => {
   const { setIsEditorConfigOpen, setIsSettingsOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
@@ -55,14 +57,15 @@ export const Sidebar = ({
       {isCollapsed && (
         <button
           onClick={onToggleCollapse}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-r-lg p-2 shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+          className="fixed left-0 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-r-lg p-2 shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+          style={{ zIndex: Z_INDEX.SIDEBAR_TOGGLE }}
           title="展开侧边栏"
         >
           <PanelLeft size={16} className="text-zinc-600 dark:text-zinc-300" />
         </button>
       )}
       
-      <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar border-r border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 z-20 overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-[260px]'}`}>
+      <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar border-r border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-[260px]'}`} style={{ zIndex: Z_INDEX.SIDEBAR }}>
         
         {!isCollapsed && (
           <SidebarHeader 
@@ -94,6 +97,7 @@ export const Sidebar = ({
               onSelectProject={onSelectProject}
               onContextMenu={handleContextMenu}
               isCollapsed={isCollapsed}
+              onRefresh={onScanPorts}
             />
 
             <SidebarFooter 
