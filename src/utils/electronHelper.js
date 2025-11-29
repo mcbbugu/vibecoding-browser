@@ -1,4 +1,4 @@
-export const handleElectronResult = async (operation, showToast, successMessage, errorPrefix = '操作失败') => {
+export const handleElectronResult = async (operation, showToast, successMessage, errorPrefix) => {
   const result = await operation();
   if (result.success) {
     if (successMessage) {
@@ -6,7 +6,8 @@ export const handleElectronResult = async (operation, showToast, successMessage,
     }
     return true;
   } else {
-    showToast(`${errorPrefix}: ${result.error}`, 'error');
+    const prefix = errorPrefix || 'Operation failed';
+    showToast(`${prefix}: ${result.error}`, 'error');
     return false;
   }
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ContextMenu } from './ContextMenu';
 import { SidebarHeader } from './Sidebar/SidebarHeader';
 import { ProjectList } from './Sidebar/ProjectList';
@@ -25,8 +26,10 @@ export const Sidebar = ({
   onNavigateHome,
   onOpenEditor,
   onScanPorts,
-  onPinProject
+  onPinProject,
+  onReorderProjects
 }) => {
+  const { t } = useTranslation();
   const { setIsEditorConfigOpen, setIsSettingsOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
   
@@ -55,7 +58,7 @@ export const Sidebar = ({
 
   return (
     <>
-      <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar border-r border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-[260px]'}`} style={{ zIndex: Z_INDEX.SIDEBAR }}>
+      <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0' : 'w-[260px] border-r border-zinc-200 dark:border-white/5'}`} style={{ zIndex: Z_INDEX.SIDEBAR }}>
         
         {!isCollapsed && (
           <SidebarHeader 
@@ -77,7 +80,7 @@ export const Sidebar = ({
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-black/20 hover:bg-zinc-200 dark:hover:bg-black/30 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all text-sm group"
               >
                 <Search size={14} />
-                <span className="font-medium">搜索项目...</span>
+                <span className="font-medium">{t('sidebar.searchProjects')}</span>
               </button>
             </div>
 
@@ -88,7 +91,8 @@ export const Sidebar = ({
               onContextMenu={handleContextMenu}
               isCollapsed={isCollapsed}
               onRefresh={onScanPorts}
-              onNavigateHome={onNavigateHome}
+              onReorderProjects={onReorderProjects}
+              onPinProject={onPinProject}
             />
 
             <SidebarFooter 
@@ -115,9 +119,9 @@ export const Sidebar = ({
                 onOpenEdit(projectId);
                 break;
               case 'delete':
-                if (window.confirm(`确定删除「${project.name}」吗？`)) {
+                if (window.confirm(t('confirm.deleteProject', { name: project.name }))) {
                   onDeleteProject(projectId);
-                  showToast(`已删除「${project.name}」`, 'info');
+                  showToast(t('toast.deleted'), 'info');
                 }
                 break;
               case 'open-ide':
@@ -133,7 +137,7 @@ export const Sidebar = ({
               case 'pin':
                 if (onPinProject) {
                   onPinProject(projectId, !project.pinned);
-                  showToast(project.pinned ? '已取消固定' : '已固定项目', 'success');
+                  showToast(project.pinned ? t('toast.unpinned') : t('toast.pinned'), 'success');
                 }
                 break;
             }

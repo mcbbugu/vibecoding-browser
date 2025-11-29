@@ -22,11 +22,11 @@ export const createSearchUrl = (query) => {
   return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 };
 
-export const extractHostname = (url = '') => {
+export const extractHostname = (url = '', fallback = 'Not Set') => {
   try {
     return new URL(url).hostname;
   } catch {
-    return url.replace(/^https?:\/\//i, '').split('/')[0] || '未设置';
+    return url.replace(/^https?:\/\//i, '').split('/')[0] || fallback;
   }
 };
 

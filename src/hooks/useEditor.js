@@ -1,47 +1,55 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { electronAPI } from '../utils/electron';
 import { storage } from '../utils/storage';
 
-const DEFAULT_EDITOR_CONFIG = { command: 'code', args: ['{path}'] };
+const PRESET_EDITORS = {
+  code: { command: 'code' },
+  cursor: { command: 'cursor' },
+  windsurf: { command: 'windsurf' },
+};
 
 export const useEditor = (showToast, setIsEditorConfigOpen) => {
+  const { t } = useTranslation();
+  
   const openEditor = useCallback(async (project) => {
     const projectPath = typeof project === 'string' ? project : project?.path;
     if (!projectPath) {
-      showToast('项目路径未设置', 'error');
+      showToast(t('toast.projectPathNotSet'), 'error');
       return;
     }
 
-    let editorConfig;
-    if (project && typeof project === 'object' && project.editorConfig) {
-      editorConfig = project.editorConfig;
+    const selectedEditor = storage.get('selectedEditor', 'cursor');
+    const customEditors = storage.get('customEditors', []);
+    
+    let command;
+    if (PRESET_EDITORS[selectedEditor]) {
+      command = PRESET_EDITORS[selectedEditor].command;
     } else {
-      if (!storage.has('editorConfig')) {
-        setIsEditorConfigOpen(true);
-        return;
+      const customEditor = customEditors.find(e => e.id === selectedEditor);
+      if (customEditor && customEditor.command) {
+        command = customEditor.command;
+      } else {
+        command = 'cursor';
       }
-      editorConfig = storage.get('editorConfig', DEFAULT_EDITOR_CONFIG);
     }
     
-    const command = editorConfig.command;
-    const args = editorConfig.args.map(arg => arg.replace('{path}', projectPath));
-    
-    const result = await electronAPI.openEditor(command, args);
+    const result = await electronAPI.openEditor(command, [projectPath]);
     
     if (result.success) {
-      showToast('编辑器已打开', 'success');
+      showToast(t('toast.editorOpened'), 'success');
     } else {
-      const errorMsg = result.error || '未知错误';
-      if (errorMsg.includes('ENOENT') || errorMsg.includes('找不到命令')) {
-        showToast(`找不到命令 "${command}"，请检查编辑器配置`, 'error');
+      const errorMsg = result.error || t('toast.unknownError');
+      if (errorMsg.includes('ENOENT') || errorMsg.includes('command not found') || errorMsg.toLowerCase().includes('not found')) {
+        showToast(t('toast.commandNotFound', { command }), 'error');
         setTimeout(() => {
           setIsEditorConfigOpen(true);
         }, 2000);
       } else {
-        showToast(`打开编辑器失败: ${errorMsg.split('\n')[0]}`, 'error');
+        showToast(t('toast.editorOpenFailed', { error: errorMsg.split('\n')[0] }), 'error');
       }
     }
-  }, [showToast, setIsEditorConfigOpen]);
+  }, [showToast, setIsEditorConfigOpen, t]);
 
   return { openEditor };
 };

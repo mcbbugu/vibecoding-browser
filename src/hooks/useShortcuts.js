@@ -1,16 +1,23 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { electronAPI } from '../utils/electron';
+import { useEditor } from './useEditor';
 
 export const useShortcuts = () => {
+  const { t } = useTranslation();
   const { 
     setIsSearchOpen, 
     setActiveProjectId, 
     activeProjectId,
+    projects,
     showToast,
     handleCmdSPress,
-    setIsFindBarOpen
+    setIsFindBarOpen,
+    setIsEditorConfigOpen
   } = useApp();
+
+  const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
 
   const handleShortcutAction = useCallback((action) => {
     switch (action) {
@@ -50,10 +57,19 @@ export const useShortcuts = () => {
           setIsFindBarOpen(true);
         }
         break;
+      case 'open-editor': {
+        const activeProject = projects?.find(p => p.id === activeProjectId);
+        if (activeProject?.path) {
+          openEditor(activeProject);
+        } else {
+          showToast(t('toast.projectPathNotSet'), 'error');
+        }
+        break;
+      }
       default:
         break;
     }
-  }, [activeProjectId, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress]);
+  }, [activeProjectId, projects, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress, openEditor, t]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -70,6 +86,12 @@ export const useShortcuts = () => {
       if (isCmdOrCtrl && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         handleShortcutAction('find');
+        return;
+      }
+
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        handleShortcutAction('open-editor');
         return;
       }
 
@@ -92,7 +114,8 @@ export const useShortcuts = () => {
         'w': 'close-tab',
         'r': 'reload',
         'l': 'focus-url',
-        's': 'cmd-s'
+        's': 'cmd-s',
+        'e': 'open-editor'
       };
 
       if (shortcuts[key]) {

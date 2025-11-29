@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dashboard } from './Dashboard';
 import { BrowserToolbar } from './BrowserView/BrowserToolbar';
 import { AddressBar } from './BrowserView/AddressBar';
@@ -8,6 +9,7 @@ import { BrowserActions } from './BrowserView/BrowserActions';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
 import { handleElectronResult } from '../utils/electronHelper';
+import { Z_INDEX } from '../utils/constants';
 import { useApp } from '../contexts/AppContext';
 import { calculateBrowserViewBounds } from '../utils/browserView';
 import { useBrowserViewBounds } from '../hooks/useBrowserViewBounds';
@@ -24,6 +26,7 @@ export const BrowserView = ({
   onOpenEdit, 
   onDeleteProject, 
   onPinProject,
+  onReorderProjects,
   isSidebarCollapsed, 
   onToggleSidebar, 
   onQuickNavigate, 
@@ -32,17 +35,17 @@ export const BrowserView = ({
   isSearchOpen,
   isSettingsOpen
 }) => {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState({ 
-    name: '桌面端', 
+    name: 'Desktop', 
     width: '100%', 
     height: '100%', 
     category: 'desktop' 
   });
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
-  const [isCacheDisabled, setIsCacheDisabled] = useState(false);
   const browserContainerRef = React.useRef(null);
   const projectUrlRef = React.useRef(null);
   const projectIdRef = React.useRef(null);
@@ -200,50 +203,22 @@ export const BrowserView = ({
     }
   };
 
-  const handleHardReload = async () => {
+  const handleClearAllCache = async () => {
     if (electronAPI.isAvailable()) {
       setIsLoading(true);
+      const session = await electronAPI.browserViewClearCache();
+      if (session?.success) {
+        await electronAPI.browserViewClearStorage();
+      }
       await handleElectronResult(
         () => electronAPI.browserViewHardReload(),
         showToast,
-        '已清除缓存并刷新'
+        t('toast.cacheCleared')
       );
       setTimeout(() => setIsLoading(false), 1000);
     }
   };
 
-  const handleClearStorage = async () => {
-    if (electronAPI.isAvailable()) {
-      const success = await handleElectronResult(
-        () => electronAPI.browserViewClearStorage(),
-        showToast,
-        '已清除 LocalStorage 和 Cookies'
-      );
-      if (success) handleRefresh();
-    }
-  };
-
-  const handleToggleCacheDisabled = async () => {
-    if (electronAPI.isAvailable()) {
-      const newState = !isCacheDisabled;
-      const success = await handleElectronResult(
-        () => electronAPI.browserViewSetCacheDisabled(newState),
-        showToast,
-        newState ? '已禁用缓存' : '已启用缓存'
-      );
-      if (success) setIsCacheDisabled(newState);
-    }
-  };
-
-  const handleOpenNetworkPanel = async () => {
-    if (electronAPI.isAvailable()) {
-      await handleElectronResult(
-        () => electronAPI.browserViewOpenNetworkPanel(),
-        showToast,
-        '已打开网络面板'
-      );
-    }
-  };
 
   return (
     <>
@@ -261,6 +236,7 @@ export const BrowserView = ({
           onOpenEdit={onOpenEdit}
           onDeleteProject={onDeleteProject}
           onPinProject={onPinProject}
+          onReorderProjects={onReorderProjects}
           onScanPorts={onScanPorts}
           showToast={showToast}
         />
@@ -273,7 +249,11 @@ export const BrowserView = ({
             : 'absolute inset-0 invisible opacity-0 pointer-events-none z-[-1]'
         }`}
       >
-      <div className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-white dark:bg-[#1c1c1f] transition-colors">
+      <div 
+        className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-zinc-50 dark:bg-sidebar transition-colors relative app-drag-region" 
+        style={{ zIndex: Z_INDEX.BROWSER_TOOLBAR, paddingLeft: isSidebarCollapsed ? '76px' : '20px' }}
+        onDoubleClick={(e) => { if (e.target === e.currentTarget) window.electronAPI?.toggleMaximize?.(); }}
+      >
             <BrowserToolbar 
               onGoBack={handleGoBack}
               onGoForward={handleGoForward}
@@ -304,18 +284,14 @@ export const BrowserView = ({
             <BrowserActions
               project={project}
               isDevToolsOpen={isDevToolsOpen}
-              isCacheDisabled={isCacheDisabled}
               onOpenEditor={openEditor}
               onToggleDevTools={handleOpenDevTools}
-              onOpenNetworkPanel={handleOpenNetworkPanel}
               onCaptureScreenshot={captureScreenshot}
-              onHardReload={handleHardReload}
-              onClearStorage={handleClearStorage}
-              onToggleCacheDisabled={handleToggleCacheDisabled}
+              onClearAllCache={handleClearAllCache}
             />
       </div>
       
-      <div className="flex-1 bg-white dark:bg-[#1c1c1f] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] border-l border-zinc-200 dark:border-white/5 relative transition-colors duration-300">
+      <div className="flex-1 bg-white dark:bg-[#1c1c1f] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative transition-colors duration-300">
 
           <BrowserContent 
             browserContainerRef={browserContainerRef}

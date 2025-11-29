@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, Save, FolderOpen } from 'lucide-react';
 import { electronAPI } from '../utils/electron';
 import { Z_INDEX } from '../utils/constants';
 
 export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = [] }) => {
+  const { t } = useTranslation();
+  
   const getDefaultForm = () => ({
     name: '',
     url: '',
@@ -78,7 +81,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/10">
-          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">编辑项目</h2>
+          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{t('projectEdit.title')}</h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
             <X size={20} />
           </button>
@@ -86,7 +89,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">项目名称</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">{t('projectEdit.name')}</label>
             <input
               type="text"
               value={formData.name}
@@ -110,7 +113,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
 
           {project?.pinned && (
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">项目路径 <span className="text-zinc-400 text-xs">(可选)</span></label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">{t('projectEdit.path')} <span className="text-zinc-400 text-xs">({t('common.optional')})</span></label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -136,14 +139,14 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
               onClick={onClose}
               className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             >
-              取消
+              {t('action.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
             >
               <Save size={16} />
-              保存
+              {t('action.save')}
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Home, PanelLeft } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { BrowserView } from './components/BrowserView';
@@ -41,6 +42,8 @@ function App() {
     showToast
   } = useApp();
 
+  const { t } = useTranslation();
+
   const {
     handleAddProject: addProject,
     handleUpdateProject,
@@ -48,7 +51,8 @@ function App() {
     handleToggleProjectStatus,
     handleScanPorts,
     handleQuickNavigate,
-    handlePinProject
+    handlePinProject,
+    handleReorderProjects
   } = useProjects();
 
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
@@ -73,8 +77,8 @@ function App() {
   const handleUrlInputSave = useCallback((projectData) => {
     const newProject = addProject(projectData);
     setActiveProjectId(newProject.id);
-    showToast('项目已创建', 'success');
-  }, [addProject, setActiveProjectId, showToast]);
+    showToast(t('toast.projectCreated'), 'success');
+  }, [addProject, setActiveProjectId, showToast, t]);
 
   const handleDeleteProjectWithCleanup = useCallback((id) => {
     handleDeleteProject(id);
@@ -124,14 +128,14 @@ function App() {
           <button
             onClick={() => setActiveProjectId(null)}
             className="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-            title="返回首页"
+            title={t('action.goHome')}
           >
             <Home size={18} className="text-zinc-600 dark:text-zinc-300" />
           </button>
           <button
             onClick={handleToggleSidebar}
             className="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-            title="展开侧边栏"
+            title={t('action.expandSidebar')}
           >
             <PanelLeft size={18} className="text-zinc-600 dark:text-zinc-300" />
           </button>
@@ -156,6 +160,7 @@ function App() {
         onOpenEditor={openEditor}
         onScanPorts={handleScanPorts}
         onPinProject={handlePinProject}
+        onReorderProjects={handleReorderProjects}
       />
       
       <BrowserView 
@@ -166,6 +171,7 @@ function App() {
         onOpenEdit={handleOpenEditModal}
         onDeleteProject={handleDeleteProjectWithCleanup}
         onPinProject={handlePinProject}
+        onReorderProjects={handleReorderProjects}
         showToast={showToast}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}

@@ -1,0 +1,175 @@
+{
+  "nav": {
+    "pinned": "Pinned",
+    "discover": "Discover"
+  },
+  "action": {
+    "refresh": "Refresh",
+    "edit": "Edit",
+    "delete": "Delete",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "open": "Open in Browser",
+    "openInFinder": "Show in Finder",
+    "openEditor": "Open in Editor",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "forward": "Forward",
+    "screenshot": "Screenshot",
+    "openDevtools": "Open DevTools",
+    "closeDevtools": "Close DevTools",
+    "clearCache": "Clear All Cache and Refresh",
+    "goHome": "Go Home",
+    "expandSidebar": "Expand Sidebar",
+    "collapseSidebar": "Collapse Sidebar",
+    "copy": "Copy",
+    "create": "Create",
+    "switchToLight": "Switch to Light Mode",
+    "switchToDark": "Switch to Dark Mode"
+  },
+  "project": {
+    "name": "Project Name",
+    "url": "URL",
+    "path": "Project Path",
+    "port": "Port",
+    "status": {
+      "running": "Running",
+      "stopped": "Stopped"
+    },
+    "serviceOnPort": "Service on Port {{port}}",
+    "noUrl": "Not Set"
+  },
+  "dashboard": {
+    "emptyPinned": "Drag services here to pin",
+    "emptyPinnedHint": "Pinned projects stay even when stopped",
+    "emptyDiscover": "No running services found. Click refresh to scan ports",
+    "scanQuick": "Quick Scan (Common Ports)",
+    "scanDev": "Dev Ports Scan (3000-10000)",
+    "scanAll": "Full Scan (All Common Ranges)",
+    "dragging": "Dragging...",
+    "previewLoading": "Loading...",
+    "previewError": "Preview failed to load",
+    "previewUnavailable": "Preview unavailable",
+    "serviceNotRunning": "Service not running"
+  },
+  "browser": {
+    "serviceStopped": "Service Stopped",
+    "serviceStoppedDesc": "The development server for {{name}} is currently inactive.",
+    "serviceStoppedHint": "Please start the server in your code editor to preview.",
+    "enterUrl": "Enter a URL to browse",
+    "enterUrlDesc": "This project doesn't require a local server. Paste any website URL above or edit the project details.",
+    "editProject": "Edit Project"
+  },
+  "search": {
+    "placeholder": "Search projects or enter URL to create...",
+    "noResults": "No matching projects found",
+    "createHint": "Enter URL to create new project",
+    "quickCreate": "Quick Create",
+    "createAndOpen": "Create and Open",
+    "results": "Search Results",
+    "openSearch": "Open Search"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "editor": "Select Editor",
+    "editorPath": "Editor Path",
+    "editorHint": "Select the default editor. This editor will be used when clicking the editor button on project cards.",
+    "addCustomEditor": "Add Custom Editor",
+    "general": "General",
+    "shortcuts": "Shortcuts",
+    "shortcutsHint": "Available keyboard shortcuts in the app",
+    "appearance": "Appearance",
+    "autoStart": "Launch at Startup",
+    "autoStartHint": "Automatically open when system starts",
+    "minimizeToTray": "Minimize to Tray",
+    "minimizeToTrayHint": "Minimize to system tray when closing window",
+    "about": "About",
+    "version": "Version"
+  },
+  "shortcuts": {
+    "search": "Search Projects",
+    "openEditor": "Open Editor",
+    "closeProject": "Close Current Project",
+    "refresh": "Refresh Page",
+    "focusUrl": "Focus Address Bar",
+    "toggleSidebar": "Toggle Sidebar (double-click)",
+    "pageSearch": "Page Search",
+    "back": "Go Back",
+    "forward": "Go Forward"
+  },
+  "editModal": {
+    "title": "Edit Project",
+    "addTitle": "Add Project",
+    "namePlaceholder": "Enter project name",
+    "urlPlaceholder": "http://localhost:3000",
+    "pathPlaceholder": "Select project folder",
+    "selectFolder": "Select Folder",
+    "requiresLocalService": "Requires Local Service",
+    "requiresLocalServiceHint": "Enable to monitor port status"
+  },
+  "toast": {
+    "pinned": "Project pinned",
+    "unpinned": "Project unpinned",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "copied": "Copied to clipboard",
+    "screenshotSaved": "Screenshot saved",
+    "screenshotSavedToClipboard": "Screenshot saved to clipboard",
+    "screenshotFailed": "Screenshot failed: {{error}}",
+    "error": "Operation failed",
+    "cacheCleared": "Cache cleared and refreshed",
+    "editorConfigSaved": "Editor configuration saved",
+    "projectPathNotSet": "Project path not set",
+    "editorOpened": "Editor opened",
+    "unknownError": "Unknown error",
+    "commandNotFound": "Command \"{{command}}\" not found, please check editor configuration",
+    "editorOpenFailed": "Failed to open editor: {{error}}",
+    "projectPathRequired": "Please set project path first to start service",
+    "scanningAllPorts": "Scanning all common ports...",
+    "scanningRange": "Scanning {{range}} ({{scanning}})...",
+    "scanningDevPorts": "Scanning development ports...",
+    "scanningRangeSimple": "Scanning {{range}}...",
+    "scanningCommonPorts": "Scanning common ports...",
+    "portScanCompleted": "Port scan completed",
+    "portScanFailed": "Port scan failed",
+    "projectExists": "Project already exists",
+    "projectCreated": "Project created"
+  },
+  "confirm": {
+    "deleteProject": "Are you sure you want to delete \"{{name}}\"?"
+  },
+  "sidebar": {
+    "searchProjects": "Search Projects..."
+  },
+  "editorConfig": {
+    "title": "Configure Editor",
+    "selectEditor": "Select Editor",
+    "namePlaceholder": "Name",
+    "commandPlaceholder": "Command"
+  },
+  "projectEdit": {
+    "title": "Edit Project",
+    "name": "Project Name",
+    "path": "Project Path"
+  },
+  "urlInput": {
+    "title": "New Web Page",
+    "type": "Type",
+    "online": "Online Domain",
+    "local": "Local Development",
+    "address": "Address",
+    "port": "Port",
+    "url": "URL"
+  },
+  "common": {
+    "optional": "optional"
+  }
+}

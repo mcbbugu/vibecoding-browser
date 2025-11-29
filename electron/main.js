@@ -30,7 +30,8 @@ function registerGlobalShortcuts() {
     { accelerator: 'CommandOrControl+[', action: 'go-back' },
     { accelerator: 'CommandOrControl+]', action: 'go-forward' },
     { accelerator: 'CommandOrControl+S', action: 'cmd-s' },
-    { accelerator: 'CommandOrControl+F', action: 'find' }
+    { accelerator: 'CommandOrControl+F', action: 'find' },
+    { accelerator: 'CommandOrControl+E', action: 'open-editor' }
   ];
 
   shortcuts.forEach(({ accelerator, action }) => {
@@ -210,6 +211,16 @@ ipcMain.on('open-devtools', (event) => {
   const window = BrowserWindow.fromWebContents(event.sender);
   if (window) {
     window.webContents.openDevTools();
+  }
+});
+
+ipcMain.handle('toggle-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
   }
 });
 
@@ -478,6 +489,11 @@ ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
     
     // 添加事件监听器（只在创建新 BrowserView 时添加一次）
     const setupEventListeners = (view) => {
+      view.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+      });
+
       view.webContents.on('before-input-event', (event, input) => {
         if (input.type !== 'keyDown') return;
         
@@ -824,17 +840,25 @@ ipcMain.handle('browser-view-set-cache-disabled', async (event, disabled) => {
 });
 
 ipcMain.handle('browser-view-can-go-back', () => {
-  if (!currentBrowserView) {
+  if (!currentBrowserView || !currentBrowserView.webContents || currentBrowserView.webContents.isDestroyed()) {
     return { canGoBack: false };
   }
-  return { canGoBack: currentBrowserView.webContents.canGoBack() };
+  try {
+    return { canGoBack: currentBrowserView.webContents.canGoBack() };
+  } catch {
+    return { canGoBack: false };
+  }
 });
 
 ipcMain.handle('browser-view-can-go-forward', () => {
-  if (!currentBrowserView) {
+  if (!currentBrowserView || !currentBrowserView.webContents || currentBrowserView.webContents.isDestroyed()) {
     return { canGoForward: false };
   }
-  return { canGoForward: currentBrowserView.webContents.canGoForward() };
+  try {
+    return { canGoForward: currentBrowserView.webContents.canGoForward() };
+  } catch {
+    return { canGoForward: false };
+  }
 });
 
 ipcMain.handle('browser-view-copy', () => {

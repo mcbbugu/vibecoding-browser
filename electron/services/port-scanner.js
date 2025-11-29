@@ -1,6 +1,11 @@
 const net = require('net');
 const http = require('http');
 
+const SYSTEM_PORTS = [
+  5000, 5001, // macOS AirPlay Receiver
+  7000,       // macOS AirPlay
+];
+
 // 常用的开发服务器端口
 const COMMON_PORTS = [
   3000, 3001, 3002, 3003, 3004, 3005, // React, Next.js
@@ -11,7 +16,7 @@ const COMMON_PORTS = [
   8100, 8101, 8102, 8103, 8104, 8105, // 扩展 8xxx
   4200, 4201, // Angular
   9000, 9001, // 其他
-  5000, 5001, // Flask, Python
+  5002, 5003, // Flask, Python (5000/5001 被 macOS AirPlay 占用)
   4000, 4001, // Gatsby
   6006, 6007, // Storybook
   1313, // Hugo
@@ -31,7 +36,7 @@ const PORT_RANGES = {
   http: { start: 8000, end: 8090, name: 'HTTP 服务' },
   angular: { start: 4200, end: 4210, name: 'Angular' },
   vue: { start: 8080, end: 8090, name: 'Vue' },
-  python: { start: 5000, end: 5010, name: 'Python/Flask' },
+  python: { start: 5002, end: 5010, name: 'Python/Flask' },
   node: { start: 3000, end: 3050, name: 'Node.js' },
 };
 
@@ -125,7 +130,7 @@ async function scanCommonPorts() {
     COMMON_PORTS.map(port => scanPort(port))
   );
   
-  const openPorts = results.filter(result => result.isOpen);
+  const openPorts = results.filter(result => result.isOpen && !SYSTEM_PORTS.includes(result.port));
   console.log('[PortScanner] Found open ports:', openPorts);
   return openPorts;
 }
@@ -147,7 +152,7 @@ async function scanPortRange(start, end, concurrency = 50) {
     const batchResults = await Promise.all(
       batch.map(port => scanPort(port))
     );
-    results.push(...batchResults.filter(r => r.isOpen));
+    results.push(...batchResults.filter(r => r.isOpen && !SYSTEM_PORTS.includes(r.port)));
   }
   
   return results;
@@ -189,7 +194,7 @@ async function scanAllPorts(onProgress) {
     { start: 443, end: 453, name: 'HTTPS' },     // HTTPS
     { start: 3000, end: 3100, name: 'Node.js' }, // Node.js 常用
     { start: 4000, end: 4300, name: 'Frontend' },// 前端框架
-    { start: 5000, end: 5200, name: 'Python/Vite' }, // Python/Vite
+    { start: 5002, end: 5200, name: 'Python/Vite' }, // Python/Vite (跳过 5000/5001 macOS AirPlay)
     { start: 8000, end: 8100, name: 'HTTP Alt' },// 备用 HTTP
     { start: 9000, end: 9100, name: 'Misc' },    // 其他
     { start: 10000, end: 10100, name: 'High' },  // 高位端口

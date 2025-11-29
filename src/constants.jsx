@@ -68,8 +68,8 @@ export const getIconForType = (type) => {
 };
 
 export const PROJECT_CATEGORY_LABELS = {
-    local: '本地开发',
-    online: '在线域名'
+    local: 'Local Development',
+    online: 'Online Domain'
 };
 
 export const getProjectCategory = (project = {}) => {

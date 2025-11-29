@@ -73,6 +73,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeAllListeners('global-shortcut');
   },
 
-  openInTerminal: (cwd) => ipcRenderer.invoke('open-in-terminal', cwd)
+  openInTerminal: (cwd) => ipcRenderer.invoke('open-in-terminal', cwd),
+  
+  toggleMaximize: () => ipcRenderer.invoke('toggle-maximize')
 });
 

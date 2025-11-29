@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, AlertTriangle, Copy } from 'lucide-react';
 
 const getSecurityIcon = (url) => {
@@ -30,10 +31,11 @@ export const AddressBar = ({
   projects,
   onSelectProject 
 }) => {
+  const { t } = useTranslation();
   const securityIcon = getSecurityIcon(url);
   
   return (
-    <div className="flex-1 flex items-center gap-2">
+    <div className="flex-1 flex items-center gap-2 app-no-drag">
       <form onSubmit={onUrlSubmit} className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 focus-within:bg-zinc-200 dark:focus-within:bg-zinc-800 transition-colors">
         {securityIcon && (
           <div className="shrink-0 flex items-center">
@@ -54,7 +56,7 @@ export const AddressBar = ({
         type="button"
         onClick={onCopyUrl}
         className="shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        title="复制"
+        title={t('action.copy')}
       >
         <Copy size={14} />
       </button>

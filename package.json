@@ -1,7 +1,7 @@
 {
-  "name": "vibecoding-browser",
+  "name": "vibecoding-devdock",
   "version": "1.0.0",
-  "description": "Developer Browser for Web Coding",
+  "description": "Local Development Project Manager",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -15,10 +15,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "electron-store": "^8.1.0",
+    "i18next": "^25.6.3",
+    "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-i18next": "^16.3.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
@@ -32,14 +38,23 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.vibecoding.browser",
-    "productName": "VibeCoding Browser",
+    "appId": "com.vibecoding.devdock",
+    "productName": "VibeCoding DevDock",
     "files": [
       "dist/**/*",
       "electron/**/*"
     ],
     "directories": {
       "buildResources": "assets"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.developer-tools"
     }
   }
 }

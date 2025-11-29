@@ -1,0 +1,175 @@
+{
+  "nav": {
+    "pinned": "固定项目",
+    "discover": "发现"
+  },
+  "action": {
+    "refresh": "刷新",
+    "edit": "编辑",
+    "delete": "删除",
+    "pin": "固定",
+    "unpin": "取消固定",
+    "open": "在浏览器中打开",
+    "openInFinder": "在 Finder 中显示",
+    "openEditor": "在编辑器中打开",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "close": "关闭",
+    "back": "后退",
+    "forward": "前进",
+    "screenshot": "截图",
+    "openDevtools": "打开控制台",
+    "closeDevtools": "关闭控制台",
+    "clearCache": "清除所有缓存并刷新",
+    "goHome": "返回首页",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "折叠侧边栏",
+    "copy": "复制",
+    "create": "创建",
+    "switchToLight": "切换到亮色模式",
+    "switchToDark": "切换到暗色模式"
+  },
+  "project": {
+    "name": "项目名称",
+    "url": "URL 地址",
+    "path": "项目路径",
+    "port": "端口",
+    "status": {
+      "running": "运行中",
+      "stopped": "已停止"
+    },
+    "serviceOnPort": "Service on Port {{port}}",
+    "noUrl": "未设置"
+  },
+  "dashboard": {
+    "emptyPinned": "拖拽下方服务到这里固定",
+    "emptyPinnedHint": "固定后即使服务停止也会保留",
+    "emptyDiscover": "未发现运行中的服务，点击刷新扫描端口",
+    "scanQuick": "快速扫描（常用端口）",
+    "scanDev": "开发端口扫描（3000-10000）",
+    "scanAll": "全面扫描（所有常用段）",
+    "dragging": "拖拽中...",
+    "previewLoading": "加载中...",
+    "previewError": "预览加载失败",
+    "previewUnavailable": "预览不可用",
+    "serviceNotRunning": "服务未运行"
+  },
+  "browser": {
+    "serviceStopped": "服务已停止",
+    "serviceStoppedDesc": "{{name}} 的开发服务器当前未运行。",
+    "serviceStoppedHint": "请在代码编辑器中启动服务以预览。",
+    "enterUrl": "输入 URL 以浏览",
+    "enterUrlDesc": "此项目不需要本地服务。在上方粘贴任意网站 URL 或编辑项目详情。",
+    "editProject": "编辑项目"
+  },
+  "search": {
+    "placeholder": "搜索已有项目或输入 URL 新建...",
+    "noResults": "未找到匹配的项目",
+    "createHint": "输入 URL 创建新项目",
+    "quickCreate": "快速创建",
+    "createAndOpen": "创建并打开",
+    "results": "搜索结果",
+    "openSearch": "打开搜索"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "editor": "选择编辑器",
+    "editorPath": "编辑器路径",
+    "editorHint": "选择默认编辑器，点击项目卡片的编辑器按钮时将使用此编辑器打开项目。",
+    "addCustomEditor": "添加自定义编辑器",
+    "general": "通用",
+    "shortcuts": "快捷键",
+    "shortcutsHint": "以下是应用内可用的快捷键列表",
+    "appearance": "外观",
+    "autoStart": "开机自启动",
+    "autoStartHint": "应用启动时自动打开",
+    "minimizeToTray": "最小化到托盘",
+    "minimizeToTrayHint": "关闭窗口时最小化到系统托盘",
+    "about": "关于",
+    "version": "版本"
+  },
+  "shortcuts": {
+    "search": "搜索项目",
+    "openEditor": "打开编辑器",
+    "closeProject": "关闭当前项目",
+    "refresh": "刷新页面",
+    "focusUrl": "聚焦地址栏",
+    "toggleSidebar": "切换侧边栏（双击）",
+    "pageSearch": "页面搜索",
+    "back": "后退",
+    "forward": "前进"
+  },
+  "editModal": {
+    "title": "编辑项目",
+    "addTitle": "添加项目",
+    "namePlaceholder": "输入项目名称",
+    "urlPlaceholder": "http://localhost:3000",
+    "pathPlaceholder": "选择项目文件夹",
+    "selectFolder": "选择文件夹",
+    "requiresLocalService": "需要本地服务",
+    "requiresLocalServiceHint": "启用后将监控端口状态"
+  },
+  "toast": {
+    "pinned": "已固定项目",
+    "unpinned": "已取消固定",
+    "saved": "已保存",
+    "deleted": "已删除",
+    "copied": "已复制到剪贴板",
+    "screenshotSaved": "截图已保存",
+    "screenshotSavedToClipboard": "截图已保存到剪贴板",
+    "screenshotFailed": "截图失败: {{error}}",
+    "error": "操作失败",
+    "cacheCleared": "已清除所有缓存并刷新",
+    "editorConfigSaved": "编辑器配置已保存",
+    "projectPathNotSet": "项目路径未设置",
+    "editorOpened": "编辑器已打开",
+    "unknownError": "未知错误",
+    "commandNotFound": "找不到命令 \"{{command}}\"，请检查编辑器配置",
+    "editorOpenFailed": "打开编辑器失败: {{error}}",
+    "projectPathRequired": "请先设置项目路径才能启动服务",
+    "scanningAllPorts": "正在扫描所有常用端口...",
+    "scanningRange": "扫描 {{range}} ({{scanning}})...",
+    "scanningDevPorts": "正在扫描开发端口...",
+    "scanningRangeSimple": "扫描 {{range}}...",
+    "scanningCommonPorts": "正在扫描常用端口...",
+    "portScanCompleted": "端口扫描完成",
+    "portScanFailed": "端口扫描失败",
+    "projectExists": "项目已存在",
+    "projectCreated": "项目已创建"
+  },
+  "confirm": {
+    "deleteProject": "确定要删除项目 \"{{name}}\" 吗？"
+  },
+  "sidebar": {
+    "searchProjects": "搜索项目..."
+  },
+  "editorConfig": {
+    "title": "配置编辑器",
+    "selectEditor": "选择编辑器",
+    "namePlaceholder": "名称",
+    "commandPlaceholder": "命令"
+  },
+  "projectEdit": {
+    "title": "编辑项目",
+    "name": "项目名称",
+    "path": "项目路径"
+  },
+  "urlInput": {
+    "title": "新建网页",
+    "type": "类型",
+    "online": "在线域名",
+    "local": "本地开发",
+    "address": "地址",
+    "port": "端口",
+    "url": "网址"
+  },
+  "common": {
+    "optional": "可选"
+  }
+}

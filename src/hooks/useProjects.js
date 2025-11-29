@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { normalizeProjectUpdates, detectProjectType, getProjectCommand } from '../utils/project';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
@@ -6,13 +7,15 @@ import { electronAPI } from '../utils/electron';
 import { getProjectCategory } from '../constants';
 
 export const useProjects = () => {
+  const { t } = useTranslation();
   const { projects, setProjects, showToast } = useApp();
 
   const handleAddProject = useCallback((projectData) => {
     const newProject = {
       id: Date.now().toString(),
       ...projectData,
-      category: getProjectCategory(projectData)
+      category: getProjectCategory(projectData),
+      order: Date.now()
     };
     setProjects(prev => [...prev, newProject]);
     return newProject;
@@ -70,7 +73,7 @@ export const useProjects = () => {
         }));
         showToast(`${project.name} stopped`, 'info');
       } else {
-        showToast('请先设置项目路径才能启动服务', 'error');
+        showToast(t('toast.projectPathRequired'), 'error');
       }
       return;
     }
@@ -127,24 +130,23 @@ export const useProjects = () => {
       let progressCleanup;
       
       if (scanType === 'all') {
-        showToast('正在扫描所有常用端口...', 'info');
+        showToast(t('toast.scanningAllPorts'), 'info');
         
-        // 监听进度
         progressCleanup = electronAPI.onPortScanProgress?.((progress) => {
-          showToast(`扫描 ${progress.range} (${progress.scanning})...`, 'info');
+          showToast(t('toast.scanningRange', { range: progress.range, scanning: progress.scanning }), 'info');
         });
         
         scanPromise = electronAPI.scanAllPorts();
       } else if (scanType === 'development') {
-        showToast('正在扫描开发端口...', 'info');
+        showToast(t('toast.scanningDevPorts'), 'info');
         
         progressCleanup = electronAPI.onPortScanProgress?.((progress) => {
-          showToast(`扫描 ${progress.range}...`, 'info');
+          showToast(t('toast.scanningRangeSimple', { range: progress.range }), 'info');
         });
         
         scanPromise = electronAPI.scanDevelopmentPorts();
       } else {
-        showToast('正在扫描常用端口...', 'info');
+        showToast(t('toast.scanningCommonPorts'), 'info');
         scanPromise = electronAPI.scanCommonPorts();
       }
       
@@ -208,7 +210,8 @@ export const useProjects = () => {
               path: '',
               type: detectProjectType(port),
               note: '',
-              category: 'local'
+              category: 'local',
+              order: Date.now()
             };
             updatedProjects.push(newProject);
           }
@@ -232,12 +235,12 @@ export const useProjects = () => {
         
         return finalProjects;
       });
-      showToast('端口扫描完成', 'success');
+      showToast(t('toast.portScanCompleted'), 'success');
     } catch (error) {
       console.error('Port scan failed:', error);
-      showToast('端口扫描失败', 'error');
+      showToast(t('toast.portScanFailed'), 'error');
     }
-  }, [setProjects, showToast]);
+  }, [setProjects, showToast, t]);
 
   const handleQuickNavigate = useCallback((input) => {
     let targetUrl = input.trim();
@@ -325,7 +328,7 @@ export const useProjects = () => {
       });
       
       if (existingProject) {
-        showToast('项目已存在', 'info');
+        showToast(t('toast.projectExists'), 'info');
         resolvedProject = existingProject;
         return prev;
       }
@@ -337,7 +340,8 @@ export const useProjects = () => {
         status: 'running',
         type: 'web',
         port: targetPort,
-        category: targetIsLocal ? 'local' : 'online'
+        category: targetIsLocal ? 'local' : 'online',
+        order: Date.now()
       };
       
       showToast('Opening: ' + targetUrl, 'success');
@@ -347,13 +351,80 @@ export const useProjects = () => {
     return resolvedProject;
   }, [setProjects, showToast]);
 
-  const handlePinProject = useCallback((id, pinned) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id === id) {
-        return { ...p, pinned };
+  const handlePinProject = useCallback((id, pinned, insertBeforeId = null) => {
+    setProjects(prev => {
+      const updated = prev.map(p => {
+        if (p.id === id) {
+          return { ...p, pinned };
+        }
+        return p;
+      });
+
+      const targetZone = pinned ? 'pinned' : 'discovered';
+      const zoneProjects = updated.filter(p => 
+        targetZone === 'pinned' ? p.pinned : (!p.pinned && p.status === 'running')
+      ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      if (!insertBeforeId) {
+        const maxOrder = Math.max(0, ...zoneProjects.map(p => p.order ?? 0));
+        return updated.map(p => 
+          p.id === id ? { ...p, order: maxOrder + 1 } : p
+        );
       }
-      return p;
-    }));
+      
+      const draggedProject = updated.find(p => p.id === id);
+      const targetIndex = zoneProjects.findIndex(p => p.id === insertBeforeId);
+      
+      if (draggedProject && targetIndex !== -1) {
+        const filteredZone = zoneProjects.filter(p => p.id !== id);
+        filteredZone.splice(targetIndex, 0, draggedProject);
+        
+        const orderMap = new Map();
+        filteredZone.forEach((p, idx) => {
+          orderMap.set(p.id, idx);
+        });
+        
+        return updated.map(p => {
+          if (orderMap.has(p.id)) {
+            return { ...p, order: orderMap.get(p.id) };
+          }
+          return p;
+        });
+      }
+
+      return updated;
+    });
+  }, [setProjects]);
+
+  const handleReorderProjects = useCallback((draggedId, targetId, zone) => {
+    setProjects(prev => {
+      const zoneProjects = prev.filter(p => 
+        zone === 'pinned' ? p.pinned : (!p.pinned && p.status === 'running')
+      ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      
+      const draggedIndex = zoneProjects.findIndex(p => p.id === draggedId);
+      const targetIndex = zoneProjects.findIndex(p => p.id === targetId);
+      
+      if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+        return prev;
+      }
+
+      const newZoneProjects = [...zoneProjects];
+      const [removed] = newZoneProjects.splice(draggedIndex, 1);
+      newZoneProjects.splice(targetIndex, 0, removed);
+      
+      const orderMap = new Map();
+      newZoneProjects.forEach((p, idx) => {
+        orderMap.set(p.id, idx);
+      });
+      
+      return prev.map(p => {
+        if (orderMap.has(p.id)) {
+          return { ...p, order: orderMap.get(p.id) };
+        }
+        return p;
+      });
+    });
   }, [setProjects]);
 
   return {
@@ -364,7 +435,8 @@ export const useProjects = () => {
     handleToggleProjectStatus,
     handleScanPorts,
     handleQuickNavigate,
-    handlePinProject
+    handlePinProject,
+    handleReorderProjects
   };
 };
 

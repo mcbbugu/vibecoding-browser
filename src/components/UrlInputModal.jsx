@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Monitor, Globe } from 'lucide-react';
 import { normalizeUrl, isSearchQuery, createSearchUrl } from '../utils/url';
 import { electronAPI } from '../utils/electron';
 import { Z_INDEX } from '../utils/constants';
 
 export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('online');
   const [localIPs, setLocalIPs] = useState(['localhost', '127.0.0.1']);
@@ -107,7 +109,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/10">
-          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">新建网页</h2>
+          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">{t('urlInput.title')}</h2>
           <button 
             onClick={onClose} 
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
@@ -119,7 +121,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
 
         <form onSubmit={handleSubmit} className="p-6">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">类型</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t('urlInput.type')}</label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -131,7 +133,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                 }`}
               >
                 <Globe size={16} />
-                <span className="text-sm font-medium">在线域名</span>
+                <span className="text-sm font-medium">{t('urlInput.online')}</span>
               </button>
               <button
                 type="button"
@@ -143,7 +145,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                 }`}
               >
                 <Monitor size={16} />
-                <span className="text-sm font-medium">本地开发</span>
+                <span className="text-sm font-medium">{t('urlInput.local')}</span>
               </button>
             </div>
           </div>
@@ -151,7 +153,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
           {category === 'local' ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">地址</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t('urlInput.address')}</label>
                 <select
                   value={selectedHost}
                   onChange={(e) => setSelectedHost(e.target.value)}
@@ -163,7 +165,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">端口</label>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t('urlInput.port')}</label>
                 <input
                   type="number"
                   value={port}
@@ -179,7 +181,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">网址</label>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t('urlInput.url')}</label>
               <input
                 type="text"
                 value={url}
@@ -198,13 +200,13 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
               onClick={onClose}
               className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
             >
-              取消
+              {t('action.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
             >
-              创建
+              {t('action.create')}
             </button>
           </div>
         </form>

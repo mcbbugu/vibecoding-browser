@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen, Trash2, Code, Edit, Pin, PinOff } from 'lucide-react';
 import { Z_INDEX } from '../utils/constants';
 
@@ -7,6 +8,7 @@ const MENU_BUTTON_CLASS = "flex items-center gap-2 px-3 py-1.5 text-xs text-zinc
 const MENU_BUTTON_DANGER_CLASS = "flex items-center gap-2 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-500 hover:text-white transition-colors mx-1 rounded-md";
 
 export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth }) => {
+  const { t } = useTranslation();
   const menuRef = useRef(null);
 
   const menuWidth = 192;
@@ -54,11 +56,11 @@ export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth
          <>
            <button onClick={() => onAction('open-ide', project.id)} className={MENU_BUTTON_CLASS}>
              <Code size={12} />
-             在 IDE 中打开
+             {t('action.openEditor')}
            </button>
            <button onClick={() => onAction('finder', project.id)} className={MENU_BUTTON_CLASS}>
              <FolderOpen size={12} />
-             在 Finder 中显示
+             {t('action.openInFinder')}
            </button>
          </>
        )}
@@ -67,13 +69,13 @@ export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth
 
        <button onClick={() => onAction('pin', project.id)} className={MENU_BUTTON_CLASS}>
           {project.pinned ? <PinOff size={12} /> : <Pin size={12} />}
-          {project.pinned ? '取消固定' : '固定项目'}
+          {project.pinned ? t('action.unpin') : t('action.pin')}
        </button>
 
        {project.pinned && (
          <button onClick={() => onAction('edit', project.id)} className={MENU_BUTTON_CLASS}>
             <Edit size={12} />
-            编辑项目
+            {t('action.edit')}
          </button>
        )}
        
@@ -81,7 +83,7 @@ export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth
        
        <button onClick={() => onAction('delete', project.id)} className={MENU_BUTTON_DANGER_CLASS}>
           <Trash2 size={12} />
-          删除项目
+          {t('action.delete')}
        </button>
     </div>
   );

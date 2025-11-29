@@ -1,70 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { Z_INDEX } from '../utils/constants';
 
 export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
-  const [editorConfig, setEditorConfig] = useState({
-    command: 'code',
-    args: ['{path}']
-  });
+  const { t } = useTranslation();
+  const [selectedEditor, setSelectedEditor] = useState('cursor');
+  const [customEditors, setCustomEditors] = useState([]);
+
+  const presetEditors = [
+    { id: 'code', name: 'VS Code', command: 'code' },
+    { id: 'cursor', name: 'Cursor', command: 'cursor' },
+    { id: 'windsurf', name: 'Windsurf', command: 'windsurf' },
+  ];
 
   useEffect(() => {
     if (isOpen) {
-      const saved = storage.get('editorConfig', { command: 'code', args: ['{path}'] });
-      setEditorConfig(saved);
+      const savedEditor = storage.get('selectedEditor', 'cursor');
+      const savedCustomEditors = storage.get('customEditors', []);
+      setSelectedEditor(savedEditor);
+      setCustomEditors(savedCustomEditors);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    storage.set('editorConfig', editorConfig);
-    showToast('编辑器配置已保存', 'success');
+    storage.set('selectedEditor', selectedEditor);
+    storage.set('customEditors', customEditors);
+    showToast(t('toast.editorConfigSaved'), 'success');
     onClose();
   };
 
-  const handleAddArg = () => {
-    setEditorConfig(prev => ({
-      ...prev,
-      args: [...prev.args, '']
-    }));
+  const handleAddCustomEditor = () => {
+    const newEditor = {
+      id: `custom-${Date.now()}`,
+      name: '',
+      command: ''
+    };
+    setCustomEditors(prev => [...prev, newEditor]);
   };
 
-  const handleRemoveArg = (index) => {
-    setEditorConfig(prev => ({
-      ...prev,
-      args: prev.args.filter((_, i) => i !== index)
-    }));
+  const handleRemoveCustomEditor = (id) => {
+    setCustomEditors(prev => prev.filter(e => e.id !== id));
+    if (selectedEditor === id) {
+      setSelectedEditor('cursor');
+    }
   };
 
-  const handleArgChange = (index, value) => {
-    setEditorConfig(prev => ({
-      ...prev,
-      args: prev.args.map((arg, i) => i === index ? value : arg)
-    }));
-  };
-
-  const presetEditors = [
-    { name: 'VS Code', command: 'code', args: ['{path}'] },
-    { name: 'Cursor', command: 'cursor', args: ['{path}'] },
-    { name: 'Windsurf', command: 'windsurf', args: ['{path}'] },
-    { name: 'Sublime Text', command: 'subl', args: ['{path}'] },
-    { name: 'Atom', command: 'atom', args: ['{path}'] },
-    { name: 'WebStorm', command: 'webstorm', args: ['{path}'] },
-  ];
-
-  const handlePresetSelect = (preset) => {
-    setEditorConfig({
-      command: preset.command,
-      args: [...preset.args]
-    });
+  const handleCustomEditorChange = (id, field, value) => {
+    setCustomEditors(prev => prev.map(e => 
+      e.id === id ? { ...e, [field]: value } : e
+    ));
   };
 
   const modalContent = (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm"
       style={{ 
         zIndex: Z_INDEX.MODAL_BACKDROP,
         position: 'fixed',
@@ -85,7 +79,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">配置编辑器</h2>
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{t('editorConfig.title')}</h2>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
@@ -95,84 +89,87 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-              <strong>使用说明：</strong>确保编辑器命令已添加到系统 PATH 中。在终端运行 <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">which {editorConfig.command || 'code'}</code> 检查命令是否可用。如果找不到命令，请参考编辑器的安装文档配置 PATH。
+              {t('settings.editorHint')}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              预设编辑器
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {presetEditors.map(preset => (
-                <button
-                  key={preset.name}
-                  onClick={() => handlePresetSelect(preset)}
-                  className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                    editorConfig.command === preset.command
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                      : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-                  }`}
-                >
-                  {preset.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              命令
-            </label>
-            <input
-              type="text"
-              value={editorConfig.command}
-              onChange={(e) => setEditorConfig(prev => ({ ...prev, command: e.target.value }))}
-              placeholder="例如: code, cursor, subl"
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <p className="text-xs text-zinc-400 mt-1">
-              命令名称（需要在系统 PATH 中）。如果命令不存在，请：
-              <br />• macOS: 在终端运行 <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">echo $PATH</code> 查看 PATH
-              <br />• 将编辑器添加到 PATH 或使用完整路径（如 <code className="bg-zinc-100 dark:bg-zinc-800 px-1 rounded">/Applications/Cursor.app/Contents/Resources/app/bin/cursor</code>）
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              参数
+              {t('editorConfig.selectEditor')}
             </label>
             <div className="space-y-2">
-              {editorConfig.args.map((arg, index) => (
-                <div key={index} className="flex items-center gap-2">
+              {presetEditors.map(editor => (
+                <label
+                  key={editor.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedEditor === editor.id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                  }`}
+                >
                   <input
-                    type="text"
-                    value={arg}
-                    onChange={(e) => handleArgChange(index, e.target.value)}
-                    placeholder="例如: {path}"
-                    className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    type="radio"
+                    name="editor"
+                    value={editor.id}
+                    checked={selectedEditor === editor.id}
+                    onChange={() => setSelectedEditor(editor.id)}
+                    className="w-4 h-4 text-indigo-500"
                   />
-                  {editorConfig.args.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveArg(index)}
-                      className="p-2 text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">{editor.name}</span>
+                  <span className="text-xs text-zinc-400 ml-auto font-mono">{editor.command}</span>
+                </label>
+              ))}
+              
+              {customEditors.map(editor => (
+                <div
+                  key={editor.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    selectedEditor === editor.id
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      : 'border-zinc-200 dark:border-zinc-700'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="editor"
+                    value={editor.id}
+                    checked={selectedEditor === editor.id}
+                    onChange={() => setSelectedEditor(editor.id)}
+                    className="w-4 h-4 text-indigo-500"
+                  />
+              <input
+                type="text"
+                value={editor.name}
+                onChange={(e) => handleCustomEditorChange(editor.id, 'name', e.target.value)}
+                placeholder={t('editorConfig.namePlaceholder')}
+                className="flex-1 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500"
+              />
+              <input
+                type="text"
+                value={editor.command}
+                onChange={(e) => handleCustomEditorChange(editor.id, 'command', e.target.value)}
+                placeholder={t('editorConfig.commandPlaceholder')}
+                className="w-24 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-xs font-mono text-zinc-400 focus:outline-none focus:border-indigo-500"
+              />
+                  <button
+                    onClick={() => handleRemoveCustomEditor(editor.id)}
+                    className="p-1 text-zinc-400 hover:text-rose-500 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))}
-              <button
-                onClick={handleAddArg}
-                className="w-full px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus size={14} />
-                添加参数
-              </button>
             </div>
-            <p className="text-xs text-zinc-400 mt-1">使用 {'{path}'} 作为项目路径占位符</p>
+            
+            <button
+              onClick={handleAddCustomEditor}
+              className="w-full mt-3 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus size={14} />
+              {t('settings.addCustomEditor')}
+            </button>
           </div>
 
           <div className="pt-4 flex justify-end gap-3">
@@ -180,14 +177,14 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
               onClick={onClose}
               className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             >
-              取消
+              {t('action.cancel')}
             </button>
             <button
               onClick={handleSave}
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
             >
               <Save size={16} />
-              保存
+              {t('action.save')}
             </button>
           </div>
         </div>
@@ -197,4 +194,3 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
 
   return createPortal(modalContent, document.body);
 };
-

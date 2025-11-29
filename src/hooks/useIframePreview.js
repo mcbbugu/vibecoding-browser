@@ -57,7 +57,14 @@ export const useIframePreview = (url, shouldPreview) => {
   };
 
   useEffect(() => {
-    if (!shouldPreview || !url || !containerRef.current || iframeRef.current) return;
+    if (!shouldPreview || !url || !containerRef.current) return;
+    
+    if (iframeRef.current) {
+      if (!iframeRef.current.parentNode) {
+        containerRef.current.appendChild(iframeRef.current);
+      }
+      return;
+    }
 
     const iframe = document.createElement('iframe');
     iframeRef.current = iframe;
@@ -77,7 +84,9 @@ export const useIframePreview = (url, shouldPreview) => {
     iframe.addEventListener('error', handleIframeError);
 
     containerRef.current.appendChild(iframe);
-
+  }, [shouldPreview, url]);
+  
+  useEffect(() => {
     return () => {
       if (iframeRef.current) {
         iframeRef.current.removeEventListener('load', handleIframeLoad);
@@ -88,7 +97,7 @@ export const useIframePreview = (url, shouldPreview) => {
         iframeRef.current = null;
       }
     };
-  }, [shouldPreview, url]);
+  }, []);
 
   return {
     containerRef,

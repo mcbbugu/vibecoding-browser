@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Z_INDEX } from '../utils/constants';
 
-export const Tooltip = ({ children, message, position = 'top' }) => {
+export const Tooltip = ({ children, message, position = 'left' }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
@@ -19,16 +19,16 @@ export const Tooltip = ({ children, message, position = 'top' }) => {
 
     if (position === 'top') {
       top = triggerRect.top - tooltipRect.height - 8;
-      left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+      left = triggerRect.left - tooltipRect.width / 2;
     } else if (position === 'bottom') {
-      top = triggerRect.bottom + 8;
+      top = triggerRect.bottom + 12;
       left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
     } else if (position === 'left') {
       top = triggerRect.top + (triggerRect.height / 2) - (tooltipRect.height / 2);
-      left = triggerRect.left - tooltipRect.width - 8;
+      left = triggerRect.left - tooltipRect.width - 4;
     } else if (position === 'right') {
       top = triggerRect.top + (triggerRect.height / 2) - (tooltipRect.height / 2);
-      left = triggerRect.right + 8;
+      left = triggerRect.right + 12;
     }
 
     if (left < 8) left = 8;
