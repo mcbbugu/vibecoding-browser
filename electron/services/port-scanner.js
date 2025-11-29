@@ -1,10 +1,14 @@
 const net = require('net');
+const http = require('http');
 
 // 常用的开发服务器端口
 const COMMON_PORTS = [
   3000, 3001, 3002, 3003, 3004, 3005, // React, Next.js
+  3100, 3101, 3102, 3103, 3104, 3105, // 扩展 3xxx
   5173, 5174, 5175, 5176, 5177, 5178, // Vite
+  5100, 5101, 5102, 5103, 5104, 5105, // 扩展 5xxx
   8080, 8081, 8082, 8000, 8888, // 常规 HTTP
+  8100, 8101, 8102, 8103, 8104, 8105, // 扩展 8xxx
   4200, 4201, // Angular
   9000, 9001, // 其他
   5000, 5001, // Flask, Python
@@ -15,6 +19,9 @@ const COMMON_PORTS = [
   10000, 10001, // Warp, Deno Deploy
   24678, // Bun
   7000, 7001, 7002, // Nuxt, Gridsome
+  9100, 9101, 9102, 9103, 9104,
+  9200, 9201, 9202, 9203, 9204,
+  9300, 9301, 9302, 9303, 9304
 ];
 
 // 开发常用端口范围
@@ -29,17 +36,70 @@ const PORT_RANGES = {
 };
 
 /**
- * 扫描单个端口
+ * 验证端口是否是HTTP服务
  */
-async function scanPort(port, host = 'localhost', timeout = 500) {
+async function verifyHttpService(port, host = '127.0.0.1', timeout = 1000) {
+  return new Promise((resolve) => {
+    const req = http.get(
+      {
+        hostname: host,
+        port: port,
+        path: '/',
+        timeout: timeout,
+        headers: {
+          'User-Agent': 'Mozilla/5.0'
+        }
+      },
+      (res) => {
+        // 检查是否是有效的HTTP响应
+        // 2xx, 3xx, 4xx 都算有效（404也说明是HTTP服务）
+        // 只有完全无响应或非HTTP协议才返回false
+        const isValid = res.statusCode >= 200 && res.statusCode < 600;
+        
+        // 读取一些数据确保服务器真的返回了内容
+        let hasContent = false;
+        res.on('data', () => {
+          hasContent = true;
+        });
+        
+        res.on('end', () => {
+          // 如果状态码正常或有内容，认为是有效服务
+          resolve(isValid || hasContent);
+        });
+        
+        res.resume();
+      }
+    );
+
+    req.on('error', (err) => {
+      // 如果是连接被拒绝等错误，说明不是HTTP服务
+      resolve(false);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * 扫描单个端口（包含HTTP验证）
+ */
+async function scanPort(port, host = '127.0.0.1', timeout = 500) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     
     socket.setTimeout(timeout);
     
-    socket.on('connect', () => {
+    socket.on('connect', async () => {
       socket.destroy();
-      resolve({ port, isOpen: true });
+      
+      const isHttp = await verifyHttpService(port, host);
+      if (!isHttp && [3100, 3101, 5100, 8100].includes(port)) {
+        console.log(`[PortScanner] Port ${port} TCP open but HTTP verify failed`);
+      }
+      resolve({ port, isOpen: isHttp });
     });
     
     socket.on('timeout', () => {
@@ -60,11 +120,14 @@ async function scanPort(port, host = 'localhost', timeout = 500) {
  * 扫描常用端口（快速）
  */
 async function scanCommonPorts() {
+  console.log('[PortScanner] Scanning ports:', COMMON_PORTS);
   const results = await Promise.all(
     COMMON_PORTS.map(port => scanPort(port))
   );
   
-  return results.filter(result => result.isOpen);
+  const openPorts = results.filter(result => result.isOpen);
+  console.log('[PortScanner] Found open ports:', openPorts);
+  return openPorts;
 }
 
 /**

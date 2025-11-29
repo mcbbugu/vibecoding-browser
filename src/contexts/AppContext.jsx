@@ -17,7 +17,6 @@ export const AppProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [openTabs, setOpenTabs] = useState([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUrlInputModalOpen, setIsUrlInputModalOpen] = useState(false);
@@ -90,35 +89,12 @@ export const AppProvider = ({ children }) => {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  const addTab = useCallback((projectId) => {
-    setOpenTabs(prev => {
-      if (prev.includes(projectId)) return prev;
-      return [...prev, projectId];
-    });
-    setActiveProjectId(projectId);
-  }, []);
-
-  const closeTab = useCallback((projectId) => {
-    setOpenTabs(prev => {
-      const newTabs = prev.filter(id => id !== projectId);
-      if (activeProjectId === projectId && newTabs.length > 0) {
-        setActiveProjectId(newTabs[newTabs.length - 1]);
-      } else if (newTabs.length === 0) {
-        setActiveProjectId(null);
-      }
-      return newTabs;
-    });
-  }, [activeProjectId]);
-
   const value = {
     projects,
     setProjects,
     isLoading,
     activeProjectId,
     setActiveProjectId,
-    openTabs,
-    addTab,
-    closeTab,
     isSearchOpen,
     setIsSearchOpen,
     isEditModalOpen,

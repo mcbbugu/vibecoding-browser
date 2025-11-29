@@ -49,6 +49,8 @@ export const electronAPI = {
   },
 
   browserViewUpdateBounds: safeInvoke('browserViewUpdateBounds', { success: false }),
+  browserViewHide: safeInvoke('browserViewHide', { success: false }),
+  browserViewShow: safeInvoke('browserViewShow', { success: false }),
 
   browserViewReload: safeInvoke('browserViewReload', { success: false }),
 
@@ -67,6 +69,7 @@ export const electronAPI = {
   browserViewHardReload: safeInvoke('browserViewHardReload', { success: false, error: 'Electron API not available' }),
   browserViewClearStorage: safeInvoke('browserViewClearStorage', { success: false, error: 'Electron API not available' }),
   browserViewSetCacheDisabled: safeInvoke('browserViewSetCacheDisabled', { success: false, error: 'Electron API not available' }),
+  browserViewOpenNetworkPanel: safeInvoke('browserViewOpenNetworkPanel', { success: false, error: 'Electron API not available' }),
   
   browserViewCanGoBack: safeInvoke('browserViewCanGoBack', { canGoBack: false }),
   browserViewCanGoForward: safeInvoke('browserViewCanGoForward', { canGoForward: false }),

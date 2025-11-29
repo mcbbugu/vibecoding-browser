@@ -30,9 +30,7 @@ function registerGlobalShortcuts() {
     { accelerator: 'CommandOrControl+[', action: 'go-back' },
     { accelerator: 'CommandOrControl+]', action: 'go-forward' },
     { accelerator: 'CommandOrControl+S', action: 'cmd-s' },
-    { accelerator: 'CommandOrControl+F', action: 'find' },
-    { accelerator: 'CommandOrControl+Tab', action: 'next-tab' },
-    { accelerator: 'CommandOrControl+Shift+Tab', action: 'prev-tab' }
+    { accelerator: 'CommandOrControl+F', action: 'find' }
   ];
 
   shortcuts.forEach(({ accelerator, action }) => {
@@ -421,7 +419,7 @@ ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
       currentBrowserView = existingView;
       mainWindow.addBrowserView(currentBrowserView);
       currentBrowserView.setBounds(bounds);
-      currentBrowserView.setAutoResize({ width: true, height: true });
+      currentBrowserView.setAutoResize({ width: true, height: true, horizontal: 'none', vertical: 'none' });
       
       return { success: true };
     }
@@ -492,7 +490,6 @@ ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
           'r': 'reload',
           'l': 'focus-url',
           's': 'cmd-s',
-          'f': 'find',
           '[': 'go-back',
           ']': 'go-forward'
         };
@@ -551,7 +548,7 @@ ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
     
     mainWindow.addBrowserView(currentBrowserView);
     currentBrowserView.setBounds(bounds);
-    currentBrowserView.setAutoResize({ width: true, height: true });
+    currentBrowserView.setAutoResize({ width: true, height: true, horizontal: 'none', vertical: 'none' });
     currentBrowserView.webContents.loadURL(url);
     
     currentBrowserView.webContents.on('context-menu', (event, params) => {
@@ -653,6 +650,22 @@ ipcMain.handle('browser-view-remove', (event, projectId) => {
 
 ipcMain.handle('browser-view-update-bounds', (event, bounds) => {
   if (currentBrowserView) {
+    currentBrowserView.setBounds(bounds);
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle('browser-view-hide', () => {
+  if (currentBrowserView) {
+    currentBrowserView.setBounds({ x: -9999, y: -9999, width: 0, height: 0 });
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle('browser-view-show', (event, bounds) => {
+  if (currentBrowserView && bounds) {
     currentBrowserView.setBounds(bounds);
     return { success: true };
   }
@@ -934,6 +947,29 @@ ipcMain.handle('browser-view-print', () => {
         console.error('Print failed:', failureReason);
       }
     });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('browser-view-open-network-panel', () => {
+  if (!currentBrowserView) {
+    return { success: false, error: 'BrowserView not found' };
+  }
+  try {
+    if (currentBrowserView.webContents.isDevToolsOpened()) {
+      currentBrowserView.webContents.devToolsWebContents.executeJavaScript(`
+        DevToolsAPI.showPanel('network');
+      `).catch(() => {});
+    } else {
+      currentBrowserView.webContents.openDevTools({ mode: 'right', activate: true });
+      setTimeout(() => {
+        currentBrowserView.webContents.devToolsWebContents.executeJavaScript(`
+          DevToolsAPI.showPanel('network');
+        `).catch(() => {});
+      }, 500);
+    }
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };

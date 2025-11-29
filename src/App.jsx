@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { Home, PanelLeft } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { BrowserView } from './components/BrowserView';
 import { SearchModal } from './components/SearchModal';
@@ -18,9 +19,6 @@ function App() {
     isLoading,
     activeProjectId,
     setActiveProjectId,
-    openTabs,
-    addTab,
-    closeTab,
     isSearchOpen,
     setIsSearchOpen,
     isEditModalOpen,
@@ -49,7 +47,8 @@ function App() {
     handleDeleteProject,
     handleToggleProjectStatus,
     handleScanPorts,
-    handleQuickNavigate
+    handleQuickNavigate,
+    handlePinProject
   } = useProjects();
 
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
@@ -64,12 +63,8 @@ function App() {
   }, [setIsSidebarCollapsed]);
 
   const handleSelectProject = useCallback((id) => {
-    if (id) {
-      addTab(id);
-    } else {
-      setActiveProjectId(null);
-    }
-  }, [addTab, setActiveProjectId]);
+    setActiveProjectId(id);
+  }, [setActiveProjectId]);
 
   const handleAddProject = useCallback(() => {
     setIsUrlInputModalOpen(true);
@@ -77,9 +72,9 @@ function App() {
 
   const handleUrlInputSave = useCallback((projectData) => {
     const newProject = addProject(projectData);
-    addTab(newProject.id);
+    setActiveProjectId(newProject.id);
     showToast('项目已创建', 'success');
-  }, [addProject, addTab, showToast]);
+  }, [addProject, setActiveProjectId, showToast]);
 
   const handleDeleteProjectWithCleanup = useCallback((id) => {
     handleDeleteProject(id);
@@ -108,9 +103,9 @@ function App() {
   const handleQuickNavigateWithSelect = useCallback((input) => {
     const result = handleQuickNavigate(input);
     if (result && result.id) {
-      addTab(result.id);
+      setActiveProjectId(result.id);
     }
-  }, [handleQuickNavigate, addTab]);
+  }, [handleQuickNavigate, setActiveProjectId]);
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -124,6 +119,25 @@ function App() {
 
   return (
     <div className="flex w-screen h-screen bg-zinc-50 dark:bg-[#111111] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
+      {isSidebarCollapsed && !activeProjectId && (
+        <div className="fixed left-4 top-4 flex items-center gap-2 z-50">
+          <button
+            onClick={() => setActiveProjectId(null)}
+            className="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+            title="返回首页"
+          >
+            <Home size={18} className="text-zinc-600 dark:text-zinc-300" />
+          </button>
+          <button
+            onClick={handleToggleSidebar}
+            className="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
+            title="展开侧边栏"
+          >
+            <PanelLeft size={18} className="text-zinc-600 dark:text-zinc-300" />
+          </button>
+        </div>
+      )}
+      
       <Sidebar 
         projects={projects}
         activeProjectId={activeProjectId}
@@ -141,6 +155,7 @@ function App() {
         onNavigateHome={() => setActiveProjectId(null)}
         onOpenEditor={openEditor}
         onScanPorts={handleScanPorts}
+        onPinProject={handlePinProject}
       />
       
       <BrowserView 
@@ -150,6 +165,7 @@ function App() {
         onSelectProject={handleSelectProject}
         onOpenEdit={handleOpenEditModal}
         onDeleteProject={handleDeleteProjectWithCleanup}
+        onPinProject={handlePinProject}
         showToast={showToast}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}
@@ -157,10 +173,7 @@ function App() {
         onScanPorts={handleScanPorts}
         isEditModalOpen={isEditModalOpen}
         isSearchOpen={isSearchOpen}
-        openTabs={openTabs}
-        activeTabId={activeProjectId}
-        onSelectTab={handleSelectProject}
-        onCloseTab={closeTab}
+        isSettingsOpen={isSettingsOpen}
       />
 
       <SearchModal 

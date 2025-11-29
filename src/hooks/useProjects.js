@@ -214,14 +214,23 @@ export const useProjects = () => {
           }
         });
         
-        updatedProjects.forEach((project, index) => {
+        // 处理未发现的端口：固定项目标记为停止，临时项目直接删除
+        const finalProjects = updatedProjects.filter((project, index) => {
           const projectPort = Number(project.port);
           if (!isNaN(projectPort) && project.status === 'running' && !foundPorts.has(projectPort)) {
-            updatedProjects[index] = { ...project, status: 'stopped' };
+            if (project.pinned) {
+              // 固定项目：标记为停止
+              updatedProjects[index] = { ...project, status: 'stopped' };
+              return true;
+            } else {
+              // 临时项目：删除
+              return false;
+            }
           }
+          return true;
         });
         
-        return updatedProjects;
+        return finalProjects;
       });
       showToast('端口扫描完成', 'success');
     } catch (error) {
@@ -338,6 +347,15 @@ export const useProjects = () => {
     return resolvedProject;
   }, [setProjects, showToast]);
 
+  const handlePinProject = useCallback((id, pinned) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === id) {
+        return { ...p, pinned };
+      }
+      return p;
+    }));
+  }, [setProjects]);
+
   return {
     projects,
     handleAddProject,
@@ -345,7 +363,8 @@ export const useProjects = () => {
     handleDeleteProject,
     handleToggleProjectStatus,
     handleScanPorts,
-    handleQuickNavigate
+    handleQuickNavigate,
+    handlePinProject
   };
 };
 

@@ -33,27 +33,28 @@ export const AddressBar = ({
   const securityIcon = getSecurityIcon(url);
   
   return (
-    <div className="flex-1 max-w-3xl mx-auto group relative">
-      {securityIcon && (
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-          {securityIcon}
-        </div>
-      )}
-      <form onSubmit={onUrlSubmit} className="w-full">
+    <div className="flex-1 flex items-center gap-2">
+      <form onSubmit={onUrlSubmit} className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 focus-within:bg-zinc-200 dark:focus-within:bg-zinc-800 transition-colors">
+        {securityIcon && (
+          <div className="shrink-0 flex items-center">
+            {securityIcon}
+          </div>
+        )}
         <input 
           type="text"
           value={url}
           onChange={(e) => onUrlChange(e.target.value)}
           onFocus={(e) => e.target.select()}
-          placeholder="Enter URL (e.g., localhost:3000)"
+          placeholder="localhost:3000"
           data-address-bar="true"
-          className="w-full bg-zinc-100 dark:bg-[#111111] hover:bg-zinc-50 dark:hover:bg-black transition-all rounded-xl pl-9 pr-10 py-2 text-sm text-zinc-700 dark:text-zinc-300 font-medium border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 outline-none shadow-inner text-center"
+          className="flex-1 bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 outline-none"
         />
       </form>
       <button 
+        type="button"
         onClick={onCopyUrl}
-        className="absolute inset-y-0 right-2 flex items-center text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-        title="Copy URL"
+        className="shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        title="复制"
       >
         <Copy size={14} />
       </button>

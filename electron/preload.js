@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserViewLoad: (url, bounds, projectId) => ipcRenderer.invoke('browser-view-load', url, bounds, projectId),
   browserViewRemove: (projectId) => ipcRenderer.invoke('browser-view-remove', projectId),
   browserViewUpdateBounds: (bounds) => ipcRenderer.invoke('browser-view-update-bounds', bounds),
+  browserViewHide: () => ipcRenderer.invoke('browser-view-hide'),
+  browserViewShow: (bounds) => ipcRenderer.invoke('browser-view-show', bounds),
   browserViewReload: () => ipcRenderer.invoke('browser-view-reload'),
   browserViewGoBack: () => ipcRenderer.invoke('browser-view-go-back'),
   browserViewGoForward: () => ipcRenderer.invoke('browser-view-go-forward'),
@@ -39,6 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserViewHardReload: () => ipcRenderer.invoke('browser-view-hard-reload'),
   browserViewClearStorage: () => ipcRenderer.invoke('browser-view-clear-storage'),
   browserViewSetCacheDisabled: (disabled) => ipcRenderer.invoke('browser-view-set-cache-disabled', disabled),
+  browserViewOpenNetworkPanel: () => ipcRenderer.invoke('browser-view-open-network-panel'),
   
   browserViewCanGoBack: () => ipcRenderer.invoke('browser-view-can-go-back'),
   browserViewCanGoForward: () => ipcRenderer.invoke('browser-view-can-go-forward'),

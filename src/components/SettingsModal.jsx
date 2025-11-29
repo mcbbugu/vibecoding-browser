@@ -12,8 +12,6 @@ const SHORTCUTS = [
   { key: '⌘L', description: '聚焦地址栏' },
   { key: '⌘S', description: '切换侧边栏（双击）' },
   { key: '⌘F', description: '页面搜索' },
-  { key: '⌘Tab', description: '下一个标签页' },
-  { key: '⌘⇧Tab', description: '上一个标签页' },
   { key: '⌘[', description: '后退' },
   { key: '⌘]', description: '前进' },
 ];
@@ -324,7 +322,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
 
   const modalContent = (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm"
       style={{ 
         zIndex: Z_INDEX.MODAL_BACKDROP,
         position: 'fixed',

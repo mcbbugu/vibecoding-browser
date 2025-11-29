@@ -10,24 +10,48 @@ export const Toast = ({ toast, onClose }) => {
     return () => clearTimeout(timer);
   }, [toast, onClose]);
 
-  const getIcon = () => {
+  const getStyles = () => {
     switch (toast.type) {
-      case 'success': return <CheckCircle size={16} className="text-emerald-500" />;
-      case 'error': return <AlertCircle size={16} className="text-rose-500" />;
-      default: return <Info size={16} className="text-blue-500" />;
+      case 'success': 
+        return {
+          icon: <CheckCircle size={18} className="text-emerald-500" />,
+          bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+          border: 'border-emerald-200 dark:border-emerald-800/50',
+          text: 'text-emerald-900 dark:text-emerald-100'
+        };
+      case 'error': 
+        return {
+          icon: <AlertCircle size={18} className="text-rose-500" />,
+          bg: 'bg-rose-50 dark:bg-rose-950/50',
+          border: 'border-rose-200 dark:border-rose-800/50',
+          text: 'text-rose-900 dark:text-rose-100'
+        };
+      default: 
+        return {
+          icon: <Info size={18} className="text-indigo-500" />,
+          bg: 'bg-indigo-50 dark:bg-indigo-950/50',
+          border: 'border-indigo-200 dark:border-indigo-800/50',
+          text: 'text-indigo-900 dark:text-indigo-100'
+        };
     }
   };
 
+  const styles = getStyles();
+
   return (
-    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 animate-slide-down" style={{ zIndex: Z_INDEX.TOAST }}>
-      <div className="bg-white dark:bg-[#27272a] text-zinc-800 dark:text-white px-4 py-3 rounded-full shadow-2xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 min-w-[300px]">
-        {getIcon()}
-        <span className="text-sm font-medium flex-1">{toast.message}</span>
-        <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
-            <X size={14} />
+    <div className="fixed top-3 left-1/2 -translate-x-1/2 animate-slide-down pointer-events-none" style={{ zIndex: 999999 }}>
+      <div className={`${styles.bg} ${styles.border} ${styles.text} backdrop-blur-xl px-3 py-2 rounded-xl shadow-md border flex items-center gap-2 pointer-events-auto`}>
+        <div className="shrink-0">
+          {React.cloneElement(styles.icon, { size: 14 })}
+        </div>
+        <span className="text-xs font-medium leading-tight">{toast.message}</span>
+        <button 
+          onClick={onClose} 
+          className="shrink-0 p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <X size={12} className="text-zinc-400" />
         </button>
       </div>
     </div>
   );
 };
-

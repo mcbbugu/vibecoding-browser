@@ -24,7 +24,8 @@ export const Sidebar = ({
   isContentHidden,
   onNavigateHome,
   onOpenEditor,
-  onScanPorts
+  onScanPorts,
+  onPinProject
 }) => {
   const { setIsEditorConfigOpen, setIsSettingsOpen } = useApp();
   const [contextMenu, setContextMenu] = useState(null);
@@ -54,17 +55,6 @@ export const Sidebar = ({
 
   return (
     <>
-      {isCollapsed && (
-        <button
-          onClick={onToggleCollapse}
-          className="fixed left-0 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-r-lg p-2 shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-          style={{ zIndex: Z_INDEX.SIDEBAR_TOGGLE }}
-          title="展开侧边栏"
-        >
-          <PanelLeft size={16} className="text-zinc-600 dark:text-zinc-300" />
-        </button>
-      )}
-      
       <div className={`h-screen flex flex-col bg-zinc-50 dark:bg-sidebar border-r border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-zinc-400 select-none transition-all duration-300 overflow-hidden ${isCollapsed ? 'w-0 border-0' : 'w-[260px]'}`} style={{ zIndex: Z_INDEX.SIDEBAR }}>
         
         {!isCollapsed && (
@@ -81,7 +71,7 @@ export const Sidebar = ({
           </div>
         ) : (
           <>
-            <div className="px-4 mb-2">
+            <div className="px-4 pt-3 pb-2">
               <button 
                 onClick={onOpenSearch}
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-black/20 hover:bg-zinc-200 dark:hover:bg-black/30 text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-all text-sm group"
@@ -98,6 +88,7 @@ export const Sidebar = ({
               onContextMenu={handleContextMenu}
               isCollapsed={isCollapsed}
               onRefresh={onScanPorts}
+              onNavigateHome={onNavigateHome}
             />
 
             <SidebarFooter 
@@ -137,6 +128,12 @@ export const Sidebar = ({
               case 'finder':
                 if (project.path) {
                   electronAPI.openFolder(project.path);
+                }
+                break;
+              case 'pin':
+                if (onPinProject) {
+                  onPinProject(projectId, !project.pinned);
+                  showToast(project.pinned ? '已取消固定' : '已固定项目', 'success');
                 }
                 break;
             }

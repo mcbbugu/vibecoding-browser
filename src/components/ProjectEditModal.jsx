@@ -78,7 +78,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/10">
-          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">Edit Project</h2>
+          <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100">编辑项目</h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
             <X size={20} />
           </button>
@@ -86,7 +86,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Name</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">项目名称</label>
             <input
               type="text"
               value={formData.name}
@@ -97,76 +97,38 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">URL <span className="text-zinc-400 text-xs">(required)</span></label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">URL</label>
             <input
               type="text"
               value={formData.url}
               onChange={e => setFormData(prev => ({ ...prev, url: e.target.value }))}
               className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="https://example.com or localhost:3000"
+              placeholder="http://localhost:3000"
               required
             />
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Port <span className="text-zinc-400 text-xs">(optional)</span></label>
-              <input
-                type="number"
-                value={formData.port}
-                onChange={e => setFormData(prev => ({ ...prev, port: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="3000"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Type</label>
-              <select
-                value={formData.type}
-                onChange={e => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
-              >
-                <option value="web">Web</option>
-                <option value="react">React</option>
-                <option value="vue">Vue</option>
-                <option value="next">Next.js</option>
-                <option value="vite">Vite</option>
-                <option value="node">Node.js</option>
-                <option value="python">Python</option>
-              </select>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Path</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={formData.path}
-                onChange={e => setFormData(prev => ({ ...prev, path: e.target.value }))}
-                className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="~/dev/project"
-              />
-              <button
-                type="button"
-                onClick={handleSelectFolder}
-                className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300"
-              >
-                <FolderOpen size={16} />
-              </button>
+          {project?.pinned && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">项目路径 <span className="text-zinc-400 text-xs">(可选)</span></label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.path}
+                  onChange={e => setFormData(prev => ({ ...prev, path: e.target.value }))}
+                  className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="~/dev/project"
+                />
+                <button
+                  type="button"
+                  onClick={handleSelectFolder}
+                  className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300"
+                >
+                  <FolderOpen size={16} />
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Notes</label>
-            <textarea
-              value={formData.note}
-              onChange={e => setFormData(prev => ({ ...prev, note: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              placeholder="Add notes about this project..."
-            />
-          </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <button
@@ -174,14 +136,14 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
               onClick={onClose}
               className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
             >
-              Cancel
+              取消
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
             >
               <Save size={16} />
-              Save
+              保存
             </button>
           </div>
         </form>

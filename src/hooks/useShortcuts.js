@@ -7,12 +7,10 @@ export const useShortcuts = () => {
     setIsSearchOpen, 
     setActiveProjectId, 
     activeProjectId,
-    openTabs,
     showToast,
-    handleCmdSPress
+    handleCmdSPress,
+    setIsFindBarOpen
   } = useApp();
-  
-  const lastTabDirectionRef = useRef(null);
 
   const handleShortcutAction = useCallback((action) => {
     switch (action) {
@@ -28,7 +26,6 @@ export const useShortcuts = () => {
       case 'reload':
         if (electronAPI.isAvailable()) {
           electronAPI.browserViewReload();
-          showToast('Page reloaded', 'success');
         }
         break;
       case 'focus-url': {
@@ -49,44 +46,14 @@ export const useShortcuts = () => {
         handleCmdSPress();
         break;
       case 'find':
-        if (electronAPI.isAvailable()) {
-          electronAPI.browserViewFind('');
-        }
-        break;
-      case 'next-tab':
-        if (openTabs.length > 1) {
-          const currentIndex = openTabs.indexOf(activeProjectId);
-          if (currentIndex === -1) return;
-          
-          let nextIndex;
-          if (lastTabDirectionRef.current === 'backward') {
-            nextIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
-          } else {
-            nextIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
-          }
-          lastTabDirectionRef.current = 'forward';
-          setActiveProjectId(openTabs[nextIndex]);
-        }
-        break;
-      case 'prev-tab':
-        if (openTabs.length > 1) {
-          const currentIndex = openTabs.indexOf(activeProjectId);
-          if (currentIndex === -1) return;
-          
-          let prevIndex;
-          if (lastTabDirectionRef.current === 'forward') {
-            prevIndex = currentIndex < openTabs.length - 1 ? currentIndex + 1 : 0;
-          } else {
-            prevIndex = currentIndex > 0 ? currentIndex - 1 : openTabs.length - 1;
-          }
-          lastTabDirectionRef.current = 'backward';
-          setActiveProjectId(openTabs[prevIndex]);
+        if (setIsFindBarOpen) {
+          setIsFindBarOpen(true);
         }
         break;
       default:
         break;
     }
-  }, [activeProjectId, openTabs, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress]);
+  }, [activeProjectId, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -99,16 +66,6 @@ export const useShortcuts = () => {
       }
       
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-
-      if (isCmdOrCtrl && e.key === 'Tab') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleShortcutAction('prev-tab');
-        } else {
-          handleShortcutAction('next-tab');
-        }
-        return;
-      }
 
       if (isCmdOrCtrl && e.key.toLowerCase() === 'f') {
         e.preventDefault();
