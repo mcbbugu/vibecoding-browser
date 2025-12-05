@@ -9,7 +9,7 @@
     "electron": "electron .",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "start": "npm run electron:dev",
-    "package": "electron-builder"
+    "package": "electron-builder --publish always"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +19,16 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "electron-store": "^8.1.0",
+    "electron-updater": "^6.6.2",
     "i18next": "^25.6.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.554.0",
+    "posthog-js": "^1.299.0",
+    "posthog-node": "^5.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-i18next": "^16.3.5"
+    "react-i18next": "^16.3.5",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
@@ -48,13 +52,29 @@
       "buildResources": "assets"
     },
     "mac": {
+      "icon": "assets/icon.icns",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": ["x64"]
+        },
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
         }
       ],
-      "category": "public.app-category.developer-tools"
-    }
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mcbbugu",
+        "repo": "vibecoding-browser",
+        "private": false,
+        "releaseType": "release"
+      }
+    ]
   }
 }

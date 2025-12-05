@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+
+# 项目特定规则
+
+## 🌍 多语言文件同步
+- **必须**：修改 `src/locales/*.json` 时，同步更新所有语言文件（zh.json, en.json）
+- 确保所有语言的 key 结构一致
+- 修改翻译时，先列出所有语言文件，然后一起更新
+
+## 📊 分析追踪
+- 添加新功能时，考虑是否需要添加 `trackFeatureUsed()` 追踪
+- 使用 `src/utils/analytics.js` 中的现有函数，不要直接调用 PostHog API
+- 检查用户同意状态：`analytics.hasConsent()` 后再追踪
+
+## ⌨️ 快捷键
+- 添加新快捷键前，检查 `src/hooks/useShortcuts.js` 是否冲突
+- Electron 快捷键在 `electron/ipc/shortcuts.js` 中注册
+- 使用 `CMD_S_DOUBLE_INTERVAL` 常量处理双击检测
+
+## 🖱️ 拖拽功能
+- 使用 `@dnd-kit` 库，激活距离设置为 5px：`activationConstraint: { distance: 5 }`
+- 拖拽时显示 `DragOverlay` 组件
+- 侧边栏和 Dashboard 都支持拖拽排序和固定
+
+## 🔌 Electron IPC
+- IPC 通信统一通过 `src/utils/electron.js` 的 `electronAPI` 对象
+- 新增 IPC 处理函数时，在 `electron/ipc/` 对应文件中添加
+- 主进程代码在 `electron/main.js`，预加载脚本在 `electron/preload.js`
+
+## 🎨 UI 组件
+- 使用 Tailwind CSS，暗色模式用 `dark:` 前缀
+- 拖拽区域用 `app-drag-region`，非拖拽区域用 `app-no-drag`
+- Toast 提示统一使用 `showToast()` 函数
+
+## 📁 项目结构
+- 项目数据存储在 `electron-store`，通过 `src/utils/storage.js` 访问
+- 项目状态：`running` / `stopped` / `error`
+- 项目类型：`pinned`（固定）和 `discovered`（发现）

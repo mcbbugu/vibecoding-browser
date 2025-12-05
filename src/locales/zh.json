@@ -43,9 +43,9 @@
     "noUrl": "未设置"
   },
   "dashboard": {
-    "emptyPinned": "拖拽下方服务到这里固定",
+    "emptyPinned": "拖拽项目到这里固定",
     "emptyPinnedHint": "固定后即使服务停止也会保留",
-    "emptyDiscover": "未发现运行中的服务，点击刷新扫描端口",
+    "emptyDiscover": "未发现运行中的服务，点击刷新扫描端口，拖拽项目可排序和固定",
     "scanQuick": "快速扫描（常用端口）",
     "scanDev": "开发端口扫描（3000-10000）",
     "scanAll": "全面扫描（所有常用段）",
@@ -92,7 +92,18 @@
     "minimizeToTray": "最小化到托盘",
     "minimizeToTrayHint": "关闭窗口时最小化到系统托盘",
     "about": "关于",
-    "version": "版本"
+    "aboutDesc": "本地开发项目管理工具",
+    "version": "版本",
+    "analyticsTitle": "匿名数据收集",
+    "analyticsDesc": "帮助改进产品（匿名统计）",
+    "softwareUpdate": "软件更新",
+    "checkUpdate": "检查更新",
+    "checking": "检查中...",
+    "updateAvailable": "发现新版本 {{version}}",
+    "updateDownloaded": "新版本 {{version}} 下载完成",
+    "latestVersion": "已是最新版本",
+    "updateFailed": "检查更新失败",
+    "restartAndInstall": "重启并安装"
   },
   "shortcuts": {
     "search": "搜索项目",
@@ -100,7 +111,7 @@
     "closeProject": "关闭当前项目",
     "refresh": "刷新页面",
     "focusUrl": "聚焦地址栏",
-    "toggleSidebar": "切换侧边栏（双击）",
+    "toggleSidebar": "打开/关闭侧边栏（双击S）",
     "pageSearch": "页面搜索",
     "back": "后退",
     "forward": "前进"
@@ -141,7 +152,12 @@
     "portScanCompleted": "端口扫描完成",
     "portScanFailed": "端口扫描失败",
     "projectExists": "项目已存在",
-    "projectCreated": "项目已创建"
+    "projectCreated": "项目已创建",
+    "analyticsEnabled": "已开启数据收集",
+    "analyticsDisabled": "已关闭数据收集",
+    "checkingUpdate": "正在检查更新...",
+    "updateAvailableToast": "发现新版本 {{version}}，下载中...",
+    "updateCheckFailed": "检查更新失败: {{error}}"
   },
   "confirm": {
     "deleteProject": "确定要删除项目 \"{{name}}\" 吗？"

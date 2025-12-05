@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Home, PanelLeft } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -9,10 +9,12 @@ import { ProjectEditModal } from './components/ProjectEditModal';
 import { EditorConfigModal } from './components/EditorConfigModal';
 import { SettingsModal } from './components/SettingsModal';
 import { UrlInputModal } from './components/UrlInputModal';
+import { TabSwitcher } from './components/TabSwitcher';
 import { useApp } from './contexts/AppContext';
 import { useProjects } from './hooks/useProjects';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useEditor } from './hooks/useEditor';
+import analytics, { trackAppLaunched, trackDailyActive } from './utils/analytics';
 
 function App() {
   const {
@@ -32,6 +34,7 @@ function App() {
     setIsEditorConfigOpen,
     isSettingsOpen,
     setIsSettingsOpen,
+    isTabSwitcherOpen,
     toast,
     setToast,
     isDarkMode,
@@ -39,10 +42,44 @@ function App() {
     isSidebarCollapsed,
     setIsSidebarCollapsed,
     isSidebarContentHidden,
-    showToast
+    showToast,
+    isFullScreen
   } = useApp();
 
   const { t } = useTranslation();
+
+  // 初始化 Analytics（默认开启，不弹窗）
+  useEffect(() => {
+    // 标记早期用户（未来付费版会用到）
+    if (!localStorage.getItem('early_user')) {
+      localStorage.setItem('early_user', 'true');
+      localStorage.setItem('early_user_since', Date.now().toString());
+    }
+    
+    // 首次启动默认开启统计
+    if (!analytics.hasConsent()) {
+      localStorage.setItem('analytics_consent', 'true');
+    }
+    
+    // 初始化并发送事件
+    const initAnalytics = async () => {
+      await analytics.init();
+      const version = window.electron?.getAppVersion?.() || '1.0.0';
+      trackAppLaunched(version);
+      trackDailyActive();
+    };
+    initAnalytics();
+    
+    // 监听窗口激活（从后台切回来）
+    const handleFocus = () => {
+      trackDailyActive();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const {
     handleAddProject: addProject,
@@ -124,7 +161,7 @@ function App() {
   return (
     <div className="flex w-screen h-screen bg-zinc-50 dark:bg-[#111111] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
       {isSidebarCollapsed && !activeProjectId && (
-        <div className="fixed left-4 top-4 flex items-center gap-2 z-50">
+        <div className="fixed left-4 top-8 flex items-center gap-2 z-50">
           <button
             onClick={() => setActiveProjectId(null)}
             className="p-2.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
@@ -180,6 +217,7 @@ function App() {
         isEditModalOpen={isEditModalOpen}
         isSearchOpen={isSearchOpen}
         isSettingsOpen={isSettingsOpen}
+        isTabSwitcherOpen={isTabSwitcherOpen}
       />
 
       <SearchModal 
@@ -219,6 +257,8 @@ function App() {
         isDarkMode={isDarkMode}
         toggleTheme={toggleTheme}
       />
+
+      <TabSwitcher />
       
       <style>{`
         @keyframes loading-bar {

@@ -33,7 +33,10 @@ export const AppProvider = ({ children }) => {
   const [isSidebarContentHidden, setIsSidebarContentHidden] = useState(false);
   const [isEditorConfigOpen, setIsEditorConfigOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isTabSwitcherOpen, setIsTabSwitcherOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const lastCmdSPressRef = React.useRef(0);
+  const mruProjectIdsRef = React.useRef([]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -47,10 +50,33 @@ export const AppProvider = ({ children }) => {
   }, [isDarkMode]);
 
   useEffect(() => {
+    window.electronAPI?.isWindowFullScreen?.().then(setIsFullScreen);
+    const cleanup = window.electronAPI?.onWindowFullScreen?.(setIsFullScreen);
+    return cleanup;
+  }, []);
+
+  useEffect(() => {
     const loadProjects = async () => {
       try {
         const savedProjects = await electronAPI.getProjects();
-        setProjects(savedProjects || []);
+        
+        if (savedProjects && savedProjects.length > 0 && electronAPI.isAvailable()) {
+          const openPorts = await electronAPI.scanCommonPorts();
+          const foundPorts = new Set(openPorts.map(p => Number(p.port || p)));
+          
+          const projectsWithStatus = savedProjects.map(project => {
+            const projectPort = Number(project.port);
+            if (!isNaN(projectPort)) {
+              const isRunning = foundPorts.has(projectPort);
+              return { ...project, status: isRunning ? 'running' : 'stopped' };
+            }
+            return project;
+          });
+          
+          setProjects(projectsWithStatus);
+        } else {
+          setProjects(savedProjects || []);
+        }
       } catch (error) {
         console.error('Failed to load projects:', error);
         setProjects([]);
@@ -65,7 +91,31 @@ export const AppProvider = ({ children }) => {
     if (electronAPI.isAvailable() && projects.length > 0 && !isLoading) {
       electronAPI.saveProjects(projects);
     }
+    
+    const projectIds = new Set(projects.map(p => p.id));
+    mruProjectIdsRef.current = mruProjectIdsRef.current.filter(id => projectIds.has(id));
   }, [projects, isLoading]);
+
+  const updateMRU = useCallback((projectId) => {
+    if (!projectId) return;
+    mruProjectIdsRef.current = [
+      projectId,
+      ...mruProjectIdsRef.current.filter(id => id !== projectId)
+    ].slice(0, 10);
+  }, []);
+
+  const getMRUProjects = useCallback(() => {
+    return mruProjectIdsRef.current
+      .map(id => projects.find(p => p.id === id))
+      .filter(Boolean)
+      .slice(0, 4);
+  }, [projects]);
+
+  useEffect(() => {
+    if (activeProjectId) {
+      updateMRU(activeProjectId);
+    }
+  }, [activeProjectId, updateMRU]);
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ id: Date.now().toString(), message, type });
@@ -116,7 +166,12 @@ export const AppProvider = ({ children }) => {
     isSettingsOpen,
     setIsSettingsOpen,
     showToast,
-    handleCmdSPress
+    handleCmdSPress,
+    getMRUProjects,
+    updateMRU,
+    isTabSwitcherOpen,
+    setIsTabSwitcherOpen,
+    isFullScreen
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -180,6 +180,16 @@ export const ProjectList = ({
               <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-500">{t('nav.pinned')}</span>
               <span className="text-[10px] text-zinc-400 dark:text-zinc-600">{pinnedProjects.length}</span>
             </div>
+            {onRefresh && (
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-50"
+                title={t('action.refresh')}
+              >
+                <RefreshCw size={12} className={`text-zinc-400 dark:text-zinc-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
           </div>
           <SortableContext items={pinnedIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-1.5">

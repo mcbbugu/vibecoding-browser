@@ -1,22 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const useIframePreview = (url, shouldPreview) => {
+export const useIframePreview = (url, shouldPreview, refreshKey = 0) => {
   const [previewError, setPreviewError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const iframeRef = useRef(null);
   const containerRef = useRef(null);
   const timeoutRef = useRef(null);
   const lastUrlRef = useRef(null);
+  const lastRefreshKeyRef = useRef(refreshKey);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     const urlChanged = lastUrlRef.current !== url;
+    const refreshKeyChanged = lastRefreshKeyRef.current !== refreshKey;
     
-    if (urlChanged) {
+    if (urlChanged || refreshKeyChanged) {
       setPreviewError(false);
       setIsLoading(true);
       hasLoadedRef.current = false;
       lastUrlRef.current = url;
+      lastRefreshKeyRef.current = refreshKey;
+      
+      if (iframeRef.current && refreshKeyChanged && !urlChanged) {
+        iframeRef.current.src = url;
+      }
       
       if (shouldPreview && url) {
         timeoutRef.current = setTimeout(() => {
@@ -37,7 +44,7 @@ export const useIframePreview = (url, shouldPreview) => {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [url, shouldPreview]);
+  }, [url, shouldPreview, refreshKey]);
 
   const handleIframeLoad = () => {
     if (timeoutRef.current) {
@@ -57,7 +64,15 @@ export const useIframePreview = (url, shouldPreview) => {
   };
 
   useEffect(() => {
-    if (!shouldPreview || !url || !containerRef.current) return;
+    if (!shouldPreview || !url || !containerRef.current) {
+      if (iframeRef.current && iframeRef.current.parentNode) {
+        iframeRef.current.parentNode.removeChild(iframeRef.current);
+        iframeRef.current.removeEventListener('load', handleIframeLoad);
+        iframeRef.current.removeEventListener('error', handleIframeError);
+        iframeRef.current = null;
+      }
+      return;
+    }
     
     if (iframeRef.current) {
       if (!iframeRef.current.parentNode) {

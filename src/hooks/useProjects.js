@@ -151,12 +151,14 @@ export const useProjects = () => {
       }
       
       const openPorts = await scanPromise;
+      console.log('[ScanPorts] Found open ports:', openPorts);
       
       if (progressCleanup) {
         progressCleanup();
       }
       
       setProjects(prev => {
+        console.log('[ScanPorts] Current projects:', prev.map(p => ({ id: p.id, port: p.port, status: p.status, pinned: p.pinned })));
         const updatedProjects = [...prev];
         const foundPorts = new Set();
         
@@ -218,21 +220,27 @@ export const useProjects = () => {
         });
         
         // 处理未发现的端口：固定项目标记为停止，临时项目直接删除
-        const finalProjects = updatedProjects.filter((project, index) => {
+        const finalProjects = [];
+        for (const project of updatedProjects) {
           const projectPort = Number(project.port);
-          if (!isNaN(projectPort) && project.status === 'running' && !foundPorts.has(projectPort)) {
+          const wasRunning = project.status === 'running';
+          const portNotFound = !isNaN(projectPort) && !foundPorts.has(projectPort);
+          
+          console.log('[ScanPorts] Processing:', { id: project.id, port: projectPort, wasRunning, portNotFound, pinned: project.pinned });
+          
+          if (wasRunning && portNotFound) {
             if (project.pinned) {
-              // 固定项目：标记为停止
-              updatedProjects[index] = { ...project, status: 'stopped' };
-              return true;
+              console.log('[ScanPorts] Marking pinned project as stopped:', project.id);
+              finalProjects.push({ ...project, status: 'stopped' });
             } else {
-              // 临时项目：删除
-              return false;
+              console.log('[ScanPorts] Removing unpinned project:', project.id);
             }
+          } else {
+            finalProjects.push(project);
           }
-          return true;
-        });
+        }
         
+        console.log('[ScanPorts] Final projects:', finalProjects.map(p => ({ id: p.id, status: p.status })));
         return finalProjects;
       });
       showToast(t('toast.portScanCompleted'), 'success');

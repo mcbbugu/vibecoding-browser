@@ -75,6 +75,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   openInTerminal: (cwd) => ipcRenderer.invoke('open-in-terminal', cwd),
   
-  toggleMaximize: () => ipcRenderer.invoke('toggle-maximize')
+  toggleMaximize: () => ipcRenderer.invoke('toggle-maximize'),
+  
+  onWindowFullScreen: (callback) => {
+    ipcRenderer.on('window-enter-fullscreen', () => callback(true));
+    ipcRenderer.on('window-leave-fullscreen', () => callback(false));
+    return () => {
+      ipcRenderer.removeAllListeners('window-enter-fullscreen');
+      ipcRenderer.removeAllListeners('window-leave-fullscreen');
+    };
+  },
+  
+  isWindowFullScreen: () => ipcRenderer.invoke('is-window-fullscreen'),
+
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('update-available', (event, info) => callback(info));
+    return () => ipcRenderer.removeAllListeners('update-available');
+  },
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', (event, info) => callback(info));
+    return () => ipcRenderer.removeAllListeners('update-downloaded');
+  },
+  onUpdateError: (callback) => {
+    ipcRenderer.on('update-error', (event, error) => callback(error));
+    return () => ipcRenderer.removeAllListeners('update-error');
+  }
 });
 

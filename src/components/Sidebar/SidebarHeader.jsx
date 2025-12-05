@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Home, PanelLeftClose } from 'lucide-react';
 
 export const SidebarHeader = ({ onNavigateHome, onToggleSidebar }) => {
   const { t } = useTranslation();
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  
+  useEffect(() => {
+    window.electronAPI?.isWindowFullScreen?.().then(setIsFullScreen);
+    const cleanup = window.electronAPI?.onWindowFullScreen?.(setIsFullScreen);
+    return cleanup;
+  }, []);
   
   const handleDoubleClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -13,7 +20,10 @@ export const SidebarHeader = ({ onNavigateHome, onToggleSidebar }) => {
   
   return (
     <div 
-      className="px-4 h-14 flex items-center justify-end gap-1 border-b border-zinc-200 dark:border-white/5 app-drag-region"
+      className={`px-4 h-14 flex items-center gap-1 border-b border-zinc-200 dark:border-white/5 app-drag-region transition-all ${
+        isFullScreen ? 'justify-between' : 'justify-end'
+      }`}
+      style={{ paddingLeft: isFullScreen ? '16px' : '76px' }}
       onDoubleClick={handleDoubleClick}
     >
       <button

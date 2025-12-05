@@ -31,12 +31,12 @@ const getHostname = (url = '', fallback = '') => {
   }
 };
 
-const CardContent = React.memo(({ project }) => {
+const CardContent = React.memo(({ project, refreshKey = 0 }) => {
   const { t } = useTranslation();
   const host = getHostname(project.url, t('project.noUrl'));
   const gradient = 'from-zinc-400 via-zinc-300/20 to-transparent dark:from-zinc-600 dark:via-zinc-700/30 dark:to-transparent';
   const shouldPreview = project.url && project.status === 'running';
-  const { containerRef, previewError, isLoading, canPreview } = useIframePreview(project.url, shouldPreview);
+  const { containerRef, previewError, isLoading, canPreview } = useIframePreview(project.url, shouldPreview, refreshKey);
 
   return (
     <div className="flex flex-col rounded-xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/5 p-3 transition-all duration-200 text-left w-full group hover:shadow-md">
@@ -82,10 +82,11 @@ const CardContent = React.memo(({ project }) => {
   return prevProps.project.id === nextProps.project.id &&
          prevProps.project.url === nextProps.project.url &&
          prevProps.project.status === nextProps.project.status &&
-         prevProps.project.name === nextProps.project.name;
+         prevProps.project.name === nextProps.project.name &&
+         prevProps.refreshKey === nextProps.refreshKey;
 });
 
-const SortableCard = React.memo(({ project, onSelectProject, setContextMenu }) => {
+const SortableCard = React.memo(({ project, onSelectProject, setContextMenu, refreshKey }) => {
   const {
     attributes,
     listeners,
@@ -121,14 +122,15 @@ const SortableCard = React.memo(({ project, onSelectProject, setContextMenu }) =
       onContextMenu={handleContextMenu}
       className="cursor-grab active:cursor-grabbing touch-none"
     >
-      <CardContent project={project} />
+      <CardContent project={project} refreshKey={refreshKey} />
     </div>
   );
 }, (prevProps, nextProps) => {
   return prevProps.project.id === nextProps.project.id &&
          prevProps.project.url === nextProps.project.url &&
          prevProps.project.status === nextProps.project.status &&
-         prevProps.project.name === nextProps.project.name;
+         prevProps.project.name === nextProps.project.name &&
+         prevProps.refreshKey === nextProps.refreshKey;
 });
 
 const DragOverlayCard = ({ project }) => {
@@ -174,8 +176,11 @@ const DroppableZone = ({ id, children, className }) => {
 export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, onDeleteProject, onPinProject, onReorderProjects, showToast }) => {
   const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isPinnedRefreshing, setIsPinnedRefreshing] = useState(false);
+  const [isDiscoveredRefreshing, setIsDiscoveredRefreshing] = useState(false);
   const [activeId, setActiveId] = useState(null);
+  const [pinnedRefreshKey, setPinnedRefreshKey] = useState(0);
+  const [discoveredRefreshKey, setDiscoveredRefreshKey] = useState(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -217,8 +222,18 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
   };
 
   const handleDragOver = (event) => {
-    // 只用于视觉反馈，不改变状态
-    // 实际的状态变化在 handleDragEnd 中处理
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeContainer = findContainer(active.id);
+    const overContainer = over.id === 'pinned-zone' ? 'pinned'
+      : over.id === 'discovered-zone' ? 'discovered'
+      : findContainer(over.id);
+
+    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
+
+    const shouldPin = overContainer === 'pinned';
+    onPinProject?.(active.id, shouldPin, over.id !== 'pinned-zone' && over.id !== 'discovered-zone' ? over.id : null);
   };
 
   const handleDragEnd = (event) => {
@@ -249,10 +264,18 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
     }
   };
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
+  const handlePinnedRefresh = () => {
+    setIsPinnedRefreshing(true);
+    setPinnedRefreshKey(k => k + 1);
     onScanPorts?.('common');
-    setTimeout(() => setIsRefreshing(false), 1000);
+    setTimeout(() => setIsPinnedRefreshing(false), 1000);
+  };
+
+  const handleDiscoveredRefresh = () => {
+    setIsDiscoveredRefreshing(true);
+    setDiscoveredRefreshKey(k => k + 1);
+    onScanPorts?.('common');
+    setTimeout(() => setIsDiscoveredRefreshing(false), 1000);
   };
 
   return (
@@ -271,8 +294,8 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
         />
         <div className="flex-1 flex flex-col min-h-0 max-w-6xl mx-auto w-full px-8">
           
-          <section className="flex flex-col shrink-0 pb-4">
-            <div className="flex items-center justify-between mb-3">
+          <section className="flex flex-col flex-1 min-h-0 pb-4">
+            <div className="flex items-center justify-between mb-3 shrink-0">
               <div className="flex items-center gap-2">
                 <Pin size={14} className="text-zinc-400 dark:text-zinc-500" />
                 <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t('nav.pinned')}</h2>
@@ -280,18 +303,18 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
               </div>
               <button
                 type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
+                onClick={handlePinnedRefresh}
+                disabled={isPinnedRefreshing}
                 className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50"
               >
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                <RefreshCw size={16} className={isPinnedRefreshing ? 'animate-spin' : ''} />
               </button>
             </div>
 
             <SortableContext items={pinnedIds} strategy={rectSortingStrategy}>
               <DroppableZone
                 id="pinned-zone"
-                className={`h-[445px] rounded-xl transition-all duration-200 overflow-y-auto ${
+                className={`flex-1 min-h-0 rounded-xl transition-all duration-200 overflow-y-auto ${
                   pinnedProjects.length === 0 
                     ? 'border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white/40 dark:bg-white/[0.02]' 
                     : ''
@@ -305,6 +328,7 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
                         project={project}
                         onSelectProject={onSelectProject}
                         setContextMenu={setContextMenu}
+                        refreshKey={pinnedRefreshKey}
                       />
                     ))}
                   </div>
@@ -318,63 +342,42 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
             </SortableContext>
           </section>
 
-          <section className="flex flex-col shrink-0 pt-2 pb-8">
-            <div className="flex items-center justify-between mb-3">
+          <section className="flex flex-col shrink-0 pt-2 pb-8 h-[280px] lg:h-auto lg:flex-1 lg:min-h-0">
+            <div className="flex items-center justify-between mb-3 shrink-0">
               <div className="flex items-center gap-2">
                 <Zap size={14} className="text-zinc-400 dark:text-zinc-500" />
                 <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{t('nav.discover')}</h2>
                 <span className="text-xs text-zinc-400 dark:text-zinc-500">{discoveredProjects.length}</span>
               </div>
-              <div className="relative group">
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50"
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.nextElementSibling?.classList.toggle('hidden');
-                  }}
-                >
-                  <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-                </button>
-                <div className="hidden absolute right-0 top-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 min-w-[180px] z-50">
-                  {['common', 'development', 'all'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onScanPorts?.(type);
-                        e.currentTarget.parentElement?.classList.add('hidden');
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      {type === 'common' ? t('dashboard.scanQuick') : type === 'development' ? t('dashboard.scanDev') : t('dashboard.scanAll')}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleDiscoveredRefresh}
+                disabled={isDiscoveredRefreshing}
+                className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={isDiscoveredRefreshing ? 'animate-spin' : ''} />
+              </button>
             </div>
 
             <SortableContext items={discoveredIds} strategy={rectSortingStrategy}>
               <DroppableZone
                 id="discovered-zone"
-                className={`h-[225px] rounded-xl transition-all duration-200 2xl:h-[445px] ${
+                className={`flex-1 min-h-0 rounded-xl transition-all duration-200 overflow-y-auto ${
                   discoveredProjects.length === 0 
                     ? 'border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white/40 dark:bg-white/[0.02]' 
                     : ''
                 }`}
               >
                 {discoveredProjects.length > 0 ? (
-                  <div className="h-full flex gap-3.5 px-1 py-1 overflow-x-auto 2xl:grid 2xl:grid-cols-4 2xl:overflow-y-auto 2xl:overflow-x-visible">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 p-1 overflow-y-auto">
                     {discoveredProjects.map(project => (
-                      <div key={project.id} className="w-[260px] shrink-0 2xl:w-auto 2xl:shrink">
-                        <SortableCard
-                          project={project}
-                          onSelectProject={onSelectProject}
-                          setContextMenu={setContextMenu}
-                        />
-                      </div>
+                      <SortableCard
+                        key={project.id}
+                        project={project}
+                        onSelectProject={onSelectProject}
+                        setContextMenu={setContextMenu}
+                        refreshKey={discoveredRefreshKey}
+                      />
                     ))}
                   </div>
                 ) : (

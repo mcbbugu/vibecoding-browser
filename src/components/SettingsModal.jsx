@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Code, Keyboard, Palette, Settings as SettingsIcon, Plus, Trash2 } from 'lucide-react';
+import { X, Save, Code, Keyboard, Palette, Settings as SettingsIcon, Plus, Trash2, RefreshCw, BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { storage } from '../utils/storage';
 import { Z_INDEX } from '../utils/constants';
+import analytics from '../utils/analytics';
 
 const LANGUAGES = [
   { code: 'zh', name: '简体中文' },
@@ -12,12 +13,14 @@ const LANGUAGES = [
 
 export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTheme }) => {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState('editor');
+  const [activeTab, setActiveTab] = useState('general');
   const [selectedEditor, setSelectedEditor] = useState('cursor');
   const [customEditors, setCustomEditors] = useState([]);
   const [language, setLanguage] = useState(i18n.language || 'zh');
-  const [autoStart, setAutoStart] = useState(false);
-  const [minimizeToTray, setMinimizeToTray] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+  const [appVersion, setAppVersion] = useState('1.0.0');
 
   const SHORTCUTS = [
     { key: '⌘T', descKey: 'shortcuts.search' },
@@ -41,25 +44,49 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     if (isOpen) {
       const savedEditor = storage.get('selectedEditor', 'cursor');
       const savedCustomEditors = storage.get('customEditors', []);
-      const savedAutoStart = storage.get('autoStart', false);
-      const savedMinimizeToTray = storage.get('minimizeToTray', false);
+      const savedAnalytics = localStorage.getItem('analytics_consent') === 'true';
+      const version = window.electron?.getAppVersion?.() || '1.0.0';
       
       setSelectedEditor(savedEditor);
       setCustomEditors(savedCustomEditors);
       setLanguage(i18n.language || 'zh');
-      setAutoStart(savedAutoStart);
-      setMinimizeToTray(savedMinimizeToTray);
+      setAnalyticsEnabled(savedAnalytics);
+      setAppVersion(version);
+      setUpdateInfo(null);
     }
   }, [isOpen, i18n.language]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const cleanupAvailable = window.electronAPI.onUpdateAvailable((info) => {
+      showToast(t('toast.updateAvailableToast', { version: info.version }), 'info');
+    });
+
+    const cleanupDownloaded = window.electronAPI.onUpdateDownloaded((info) => {
+      setUpdateInfo({ downloaded: true, version: info.version });
+      showToast(t('settings.updateDownloaded', { version: info.version }), 'success');
+    });
+
+    const cleanupError = window.electronAPI.onUpdateError((error) => {
+      showToast(t('toast.updateCheckFailed', { error: error.error }), 'error');
+      setCheckingUpdate(false);
+    });
+
+    return () => {
+      cleanupAvailable();
+      cleanupDownloaded();
+      cleanupError();
+    };
+  }, [isOpen, showToast, t]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     storage.set('selectedEditor', selectedEditor);
     storage.set('customEditors', customEditors);
-    storage.set('autoStart', autoStart);
-    storage.set('minimizeToTray', minimizeToTray);
     i18n.changeLanguage(language);
+    storage.set('language', language);
     showToast(t('toast.saved'), 'success');
     onClose();
   };
@@ -86,11 +113,36 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     ));
   };
 
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const result = await window.electronAPI.checkForUpdates();
+      if (result.success) {
+        if (result.updateAvailable) {
+          showToast(t('settings.updateAvailable', { version: result.latestVersion }), 'info');
+        } else {
+          showToast(t('settings.latestVersion'), 'success');
+          setCheckingUpdate(false);
+        }
+      } else {
+        showToast(t('settings.updateFailed'), 'error');
+        setCheckingUpdate(false);
+      }
+    } catch (error) {
+      showToast(t('settings.updateFailed'), 'error');
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleInstallUpdate = async () => {
+    await window.electronAPI.installUpdate();
+  };
+
   const allEditors = [...presetEditors, ...customEditors];
 
   const tabs = [
-    { id: 'editor', labelKey: 'settings.editor', icon: Code },
     { id: 'general', labelKey: 'settings.general', icon: SettingsIcon },
+    { id: 'editor', labelKey: 'settings.editor', icon: Code },
     { id: 'shortcuts', labelKey: 'settings.shortcuts', icon: Keyboard },
     { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   ];
@@ -184,6 +236,23 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
 
   const renderGeneralTab = () => (
     <div className="space-y-6">
+      <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-4 mb-3">
+          <img 
+            src="/assets/logo.png" 
+            alt="DevDock" 
+            className="h-12 w-auto"
+          />
+          <div>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">VibeCoding DevDock</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.aboutDesc')}</p>
+          </div>
+        </div>
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+          {t('settings.version')}: {appVersion}
+        </p>
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
           {t('settings.language')}
@@ -208,37 +277,54 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
-          <div>
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.autoStart')}</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.autoStartHint')}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoStart}
-              onChange={(e) => setAutoStart(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
-          </label>
+      <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+        <div>
+          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.analyticsTitle')}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.analyticsDesc')}</p>
         </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={analyticsEnabled}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              setAnalyticsEnabled(enabled);
+              analytics.setConsent(enabled);
+              showToast(enabled ? t('toast.analyticsEnabled') : t('toast.analyticsDisabled'), 'success');
+            }}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
+        </label>
+      </div>
 
-        <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
-          <div>
-            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.minimizeToTray')}</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.minimizeToTrayHint')}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={minimizeToTray}
-              onChange={(e) => setMinimizeToTray(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
-          </label>
+      <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+          {t('settings.softwareUpdate')}
+        </label>
+        <div className="space-y-3">
+          {updateInfo?.downloaded ? (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                {t('settings.updateDownloaded', { version: updateInfo.version })}
+              </p>
+              <button
+                onClick={handleInstallUpdate}
+                className="w-full px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
+              >
+                {t('settings.restartAndInstall')}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate}
+              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
+              {checkingUpdate ? t('settings.checking') : t('settings.checkUpdate')}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -316,7 +402,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
       case 'appearance':
         return renderAppearanceTab();
       default:
-        return renderEditorTab();
+        return renderGeneralTab();
     }
   };
 

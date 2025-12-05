@@ -1,18 +1,16 @@
-const { app, BrowserWindow, BrowserView, ipcMain, shell, globalShortcut, dialog, clipboard, nativeImage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, globalShortcut, dialog, clipboard, nativeImage } = require('electron');
 const path = require('path');
 const os = require('os');
-const fs = require('fs');
-const { spawn } = require('child_process');
 const Store = require('electron-store');
+const { autoUpdater } = require('electron-updater');
 const { scanPort, scanCommonPorts, scanDevelopmentPorts, scanAllPorts } = require('./services/port-scanner');
-const { startService, stopService, getRunningServices, sendTerminalInput } = require('./services/process-manager');
+const { startService, stopService, getRunningServices } = require('./services/process-manager');
 const { registerTerminalHandlers } = require('./ipc/terminal');
+const { registerBrowserHandlers, setMainWindow, cleanupBrowserViews } = require('./ipc/browser');
 
 const store = new Store();
 
 let mainWindow;
-let currentBrowserView = null;
-const browserViews = new Map();
 
 function registerGlobalShortcuts() {
   // 只在窗口有焦点时注册全局快捷键
@@ -31,7 +29,8 @@ function registerGlobalShortcuts() {
     { accelerator: 'CommandOrControl+]', action: 'go-forward' },
     { accelerator: 'CommandOrControl+S', action: 'cmd-s' },
     { accelerator: 'CommandOrControl+F', action: 'find' },
-    { accelerator: 'CommandOrControl+E', action: 'open-editor' }
+    { accelerator: 'CommandOrControl+E', action: 'open-editor' },
+    { accelerator: 'CommandOrControl+Option+I', action: 'toggle-devtools' }
   ];
 
   shortcuts.forEach(({ accelerator, action }) => {
@@ -75,15 +74,13 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webviewTag: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      devTools: false
     }
   });
 
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
-    
-    // 开发模式自动打开开发者工具
-    mainWindow.webContents.openDevTools();
     
     let retryCount = 0;
     const maxRetries = 3;
@@ -116,16 +113,46 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     unregisterGlobalShortcuts();
+    cleanupBrowserViews();
     mainWindow = null;
   });
+
+  // 监听窗口全屏状态变化
+  mainWindow.on('enter-full-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('window-enter-fullscreen');
+    }
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('window-leave-fullscreen');
+    }
+  });
+  
+  setMainWindow(mainWindow);
 }
+
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('enable-features', 'SharedArrayBuffer');
 
 app.whenReady().then(() => {
   createWindow();
   registerGlobalShortcuts();
   
-  // 注册终端 IPC 处理器
   registerTerminalHandlers();
+  registerBrowserHandlers();
+
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    setInterval(() => {
+      const mem = process.memoryUsage();
+      console.log(`Memory: ${(mem.heapUsed / 1024 / 1024).toFixed(2)}MB / ${(mem.rss / 1024 / 1024).toFixed(2)}MB`);
+    }, 30000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -136,6 +163,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  unregisterGlobalShortcuts();
+  cleanupBrowserViews();
+  
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -222,6 +252,10 @@ ipcMain.handle('toggle-maximize', () => {
       mainWindow.maximize();
     }
   }
+});
+
+ipcMain.handle('is-window-fullscreen', () => {
+  return mainWindow ? mainWindow.isFullScreen() : false;
 });
 
 const findEditorCommand = (command) => {
@@ -404,622 +438,44 @@ ipcMain.handle('select-folder', async () => {
   }
 });
 
-// BrowserView 管理
-ipcMain.handle('browser-view-load', (event, url, bounds, projectId) => {
-  if (!mainWindow) return { success: false, error: 'Main window not found' };
-  
+ipcMain.handle('check-for-updates', async () => {
   try {
-    const key = projectId || url;
-    
-    // 如果已经存在该项目的 BrowserView，直接切换显示
-    if (browserViews.has(key)) {
-      const existingView = browserViews.get(key);
-      
-      // 如果 URL 改变了，重新加载
-      if (existingView.url !== url) {
-        existingView.url = url;
-        existingView.webContents.loadURL(url);
-      }
-      
-      // 隐藏当前显示的 BrowserView
-      if (currentBrowserView && currentBrowserView !== existingView) {
-        mainWindow.removeBrowserView(currentBrowserView);
-      }
-      
-      // 显示这个 BrowserView
-      currentBrowserView = existingView;
-      mainWindow.addBrowserView(currentBrowserView);
-      currentBrowserView.setBounds(bounds);
-      currentBrowserView.setAutoResize({ width: true, height: true, horizontal: 'none', vertical: 'none' });
-      
-      return { success: true };
-    }
-    
-    // 隐藏当前的 BrowserView（但不销毁）
-    if (currentBrowserView) {
-      mainWindow.removeBrowserView(currentBrowserView);
-    }
-    
-    // 创建新的 BrowserView
-    const isLocalUrl = url && (
-      url.includes('localhost') || 
-      url.includes('127.0.0.1') || 
-      url.includes('0.0.0.0') || 
-      url.includes('::1') ||
-      url.startsWith('file://') ||
-      url.match(/^https?:\/\/127\./i) ||
-      url.match(/^https?:\/\/localhost/i)
-    );
-    
-    const newBrowserView = new BrowserView({
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        devTools: true,
-        webSecurity: !isLocalUrl,
-        allowRunningInsecureContent: isLocalUrl,
-        experimentalFeatures: true
-      }
-    });
-    
-    newBrowserView.url = url;
-    
-    if (isLocalUrl) {
-      const session = newBrowserView.webContents.session;
-      
-      session.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: details.requestHeaders });
-      });
-      
-      session.setPermissionRequestHandler((webContents, permission, callback) => {
-        if (permission === 'notifications' || permission === 'geolocation') {
-          callback(false);
-        } else {
-          callback(true);
-        }
-      });
-      
-      session.setCertificateVerifyProc((request, callback) => {
-        callback(0);
-      });
-    }
-    
-    browserViews.set(key, newBrowserView);
-    currentBrowserView = newBrowserView;
-    
-    // 添加事件监听器（只在创建新 BrowserView 时添加一次）
-    const setupEventListeners = (view) => {
-      view.webContents.setWindowOpenHandler(({ url }) => {
-        shell.openExternal(url);
-        return { action: 'deny' };
-      });
-
-      view.webContents.on('before-input-event', (event, input) => {
-        if (input.type !== 'keyDown') return;
-        
-        const isCmdOrCtrl = input.meta || input.control;
-        if (!isCmdOrCtrl) return;
-        
-        const shortcuts = {
-          't': 'search',
-          'w': 'close-tab',
-          'r': 'reload',
-          'l': 'focus-url',
-          's': 'cmd-s',
-          '[': 'go-back',
-          ']': 'go-forward'
-        };
-        
-        if (input.key === 'Tab') {
-          event.preventDefault();
-          mainWindow.webContents.send('global-shortcut', input.shift ? 'prev-tab' : 'next-tab');
-        } else if (shortcuts[input.key.toLowerCase()]) {
-          event.preventDefault();
-          mainWindow.webContents.send('global-shortcut', shortcuts[input.key.toLowerCase()]);
-        }
-      });
-      
-      view.webContents.on('did-start-loading', () => {
-        if (mainWindow && !mainWindow.isDestroyed() && currentBrowserView === view) {
-          mainWindow.webContents.send('browser-view-loading', true);
-        }
-      });
-      
-      view.webContents.on('did-stop-loading', () => {
-        if (mainWindow && !mainWindow.isDestroyed() && currentBrowserView === view) {
-          mainWindow.webContents.send('browser-view-loading', false);
-        }
-      });
-      
-      view.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
-        if (mainWindow && !mainWindow.isDestroyed() && currentBrowserView === view) {
-          console.error('BrowserView load failed:', {
-            errorCode,
-            errorDescription,
-            validatedURL,
-            isMainFrame
-          });
-          mainWindow.webContents.send('browser-view-error', {
-            code: errorCode,
-            description: errorDescription,
-            url: validatedURL
-          });
-        }
-      });
-      
-      view.webContents.on('did-navigate', (event, navigationUrl) => {
-        if (mainWindow && !mainWindow.isDestroyed() && currentBrowserView === view) {
-          mainWindow.webContents.send('browser-view-navigate', navigationUrl);
-        }
-      });
-      
-      view.webContents.on('did-navigate-in-page', (event, navigationUrl) => {
-        if (mainWindow && !mainWindow.isDestroyed() && currentBrowserView === view) {
-          mainWindow.webContents.send('browser-view-navigate', navigationUrl);
-        }
-      });
-    };
-    
-    setupEventListeners(newBrowserView);
-    
-    mainWindow.addBrowserView(currentBrowserView);
-    currentBrowserView.setBounds(bounds);
-    currentBrowserView.setAutoResize({ width: true, height: true, horizontal: 'none', vertical: 'none' });
-    currentBrowserView.webContents.loadURL(url);
-    
-    currentBrowserView.webContents.on('context-menu', (event, params) => {
-      const menuTemplate = [];
-      
-      if (params.linkURL) {
-        menuTemplate.push(
-          { label: '在新窗口打开链接', click: () => shell.openExternal(params.linkURL) },
-          { label: '复制链接地址', click: () => clipboard.writeText(params.linkURL) },
-          { type: 'separator' }
-        );
-      }
-      
-      if (params.hasImageContents) {
-        menuTemplate.push(
-          { label: '在新窗口打开图片', click: () => shell.openExternal(params.srcURL) },
-          { label: '复制图片地址', click: () => clipboard.writeText(params.srcURL) },
-          { type: 'separator' }
-        );
-      }
-      
-      if (params.isEditable) {
-        menuTemplate.push(
-          { label: '撤销', role: 'undo', enabled: params.editFlags.canUndo },
-          { label: '重做', role: 'redo', enabled: params.editFlags.canRedo },
-          { type: 'separator' },
-          { label: '剪切', role: 'cut', enabled: params.editFlags.canCut },
-          { label: '复制', role: 'copy', enabled: params.editFlags.canCopy },
-          { label: '粘贴', role: 'paste', enabled: params.editFlags.canPaste },
-          { label: '全选', role: 'selectAll', enabled: params.editFlags.canSelectAll },
-          { type: 'separator' }
-        );
-      } else if (params.selectionText) {
-        menuTemplate.push(
-          { label: '复制', role: 'copy' },
-          { type: 'separator' }
-        );
-      }
-      
-      menuTemplate.push(
-        { label: '后退', enabled: currentBrowserView.webContents.canGoBack(), click: () => currentBrowserView.webContents.goBack() },
-        { label: '前进', enabled: currentBrowserView.webContents.canGoForward(), click: () => currentBrowserView.webContents.goForward() },
-        { label: '刷新', click: () => currentBrowserView.webContents.reload() },
-        { type: 'separator' },
-        { label: '另存为...', click: async () => {
-          const result = await dialog.showSaveDialog(mainWindow, {
-            title: '保存网页',
-            defaultPath: 'page.html',
-            filters: [{ name: '网页', extensions: ['html'] }]
-          });
-          if (!result.canceled && result.filePath) {
-            const html = await currentBrowserView.webContents.executeJavaScript('document.documentElement.outerHTML');
-            require('fs').writeFileSync(result.filePath, html, 'utf-8');
-          }
-        }},
-        { label: '查看网页源代码', click: () => {
-          const url = currentBrowserView.webContents.getURL();
-          if (url) currentBrowserView.webContents.loadURL(`view-source:${url}`);
-        }},
-        { label: '检查元素', click: () => currentBrowserView.webContents.openDevTools() }
-      );
-      
-      const menu = Menu.buildFromTemplate(menuTemplate);
-      menu.popup({ window: mainWindow });
-    });
-    
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-remove', (event, projectId) => {
-  if (!mainWindow) return { success: false };
-  
-  try {
-    if (projectId) {
-      const key = projectId;
-      if (browserViews.has(key)) {
-        const view = browserViews.get(key);
-        if (currentBrowserView === view) {
-          mainWindow.removeBrowserView(currentBrowserView);
-          currentBrowserView = null;
-        }
-        view.webContents.destroy();
-        browserViews.delete(key);
-      }
-    } else {
-      if (currentBrowserView) {
-        mainWindow.removeBrowserView(currentBrowserView);
-        currentBrowserView = null;
-      }
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-update-bounds', (event, bounds) => {
-  if (currentBrowserView) {
-    currentBrowserView.setBounds(bounds);
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-hide', () => {
-  if (currentBrowserView) {
-    currentBrowserView.setBounds({ x: -9999, y: -9999, width: 0, height: 0 });
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-show', (event, bounds) => {
-  if (currentBrowserView && bounds) {
-    currentBrowserView.setBounds(bounds);
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-reload', () => {
-  if (currentBrowserView) {
-    currentBrowserView.webContents.reload();
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-go-back', () => {
-  if (currentBrowserView && currentBrowserView.webContents.canGoBack()) {
-    currentBrowserView.webContents.goBack();
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-go-forward', () => {
-  if (currentBrowserView && currentBrowserView.webContents.canGoForward()) {
-    currentBrowserView.webContents.goForward();
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-devtools', () => {
-  if (currentBrowserView) {
-    if (currentBrowserView.webContents.isDevToolsOpened()) {
-      currentBrowserView.webContents.closeDevTools();
-    } else {
-      currentBrowserView.webContents.openDevTools();
-    }
-    return { success: true };
-  }
-  return { success: false };
-});
-
-ipcMain.handle('browser-view-is-devtools-opened', () => {
-  if (currentBrowserView) {
-    return { isOpened: currentBrowserView.webContents.isDevToolsOpened() };
-  }
-  return { isOpened: false };
-});
-
-ipcMain.handle('capture-screenshot', async () => {
-  if (!currentBrowserView || !mainWindow) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    const image = await currentBrowserView.webContents.capturePage();
-    if (image && !image.isEmpty()) {
-      clipboard.writeImage(image);
-      return { success: true };
-    } else {
-      return { success: false, error: 'Failed to capture page' };
-    }
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-find', (event, text, options = {}) => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    if (text === '') {
-      currentBrowserView.webContents.startFindInPage('');
-    } else {
-      currentBrowserView.webContents.findInPage(text, options);
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-stop-find', (event, action) => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    currentBrowserView.webContents.stopFindInPage(action || 'clearSelection');
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-clear-cache', async () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    const session = currentBrowserView.webContents.session;
-    await session.clearCache();
-    await session.clearStorageData();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-hard-reload', async () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    const session = currentBrowserView.webContents.session;
-    await session.clearCache();
-    currentBrowserView.webContents.reloadIgnoringCache();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-clear-storage', async () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    const session = currentBrowserView.webContents.session;
-    await session.clearStorageData({
-      storages: ['localstorage', 'cookies', 'sessionstorage']
-    });
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-set-cache-disabled', async (event, disabled) => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  
-  try {
-    const session = currentBrowserView.webContents.session;
-    await session.setCacheEnabled(!disabled);
-    return { success: true, disabled };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-can-go-back', () => {
-  if (!currentBrowserView || !currentBrowserView.webContents || currentBrowserView.webContents.isDestroyed()) {
-    return { canGoBack: false };
-  }
-  try {
-    return { canGoBack: currentBrowserView.webContents.canGoBack() };
-  } catch {
-    return { canGoBack: false };
-  }
-});
-
-ipcMain.handle('browser-view-can-go-forward', () => {
-  if (!currentBrowserView || !currentBrowserView.webContents || currentBrowserView.webContents.isDestroyed()) {
-    return { canGoForward: false };
-  }
-  try {
-    return { canGoForward: currentBrowserView.webContents.canGoForward() };
-  } catch {
-    return { canGoForward: false };
-  }
-});
-
-ipcMain.handle('browser-view-copy', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    currentBrowserView.webContents.copy();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-paste', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    currentBrowserView.webContents.paste();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-select-all', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    currentBrowserView.webContents.selectAll();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-view-source', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    const url = currentBrowserView.webContents.getURL();
-    if (url && url !== 'about:blank') {
-      const viewSourceUrl = `view-source:${url}`;
-      currentBrowserView.webContents.loadURL(viewSourceUrl);
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-save-as', async () => {
-  if (!currentBrowserView || !mainWindow) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: '保存网页',
-      defaultPath: 'page.html',
-      filters: [
-        { name: '网页', extensions: ['html', 'htm'] },
-        { name: 'PDF', extensions: ['pdf'] },
-        { name: '所有文件', extensions: ['*'] }
-      ]
-    });
-    
-    if (result.canceled || !result.filePath) {
-      return { success: false, canceled: true };
-    }
-    
-    const filePath = result.filePath;
-    const isPDF = filePath.toLowerCase().endsWith('.pdf');
-    
-    if (isPDF) {
-      try {
-        const data = await currentBrowserView.webContents.printToPDF({});
-        fs.writeFileSync(filePath, data);
-        return { success: true, filePath };
-      } catch (pdfError) {
-        return { success: false, error: pdfError.message };
-      }
-    } else {
-      try {
-        const html = await currentBrowserView.webContents.executeJavaScript(`
-          (function() {
-            return document.documentElement.outerHTML;
-          })()
-        `);
-        fs.writeFileSync(filePath, html, 'utf-8');
-        return { success: true, filePath };
-      } catch (jsError) {
-        return { success: false, error: '无法获取页面内容' };
-      }
-    }
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-print', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    currentBrowserView.webContents.print({}, (success, failureReason) => {
-      if (!success) {
-        console.error('Print failed:', failureReason);
-      }
-    });
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-open-network-panel', () => {
-  if (!currentBrowserView) {
-    return { success: false, error: 'BrowserView not found' };
-  }
-  try {
-    if (currentBrowserView.webContents.isDevToolsOpened()) {
-      currentBrowserView.webContents.devToolsWebContents.executeJavaScript(`
-        DevToolsAPI.showPanel('network');
-      `).catch(() => {});
-    } else {
-      currentBrowserView.webContents.openDevTools({ mode: 'right', activate: true });
-      setTimeout(() => {
-        currentBrowserView.webContents.devToolsWebContents.executeJavaScript(`
-          DevToolsAPI.showPanel('network');
-        `).catch(() => {});
-      }, 500);
-    }
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('browser-view-get-page-info', async () => {
-  if (!currentBrowserView) {
-    return null;
-  }
-  try {
-    const url = currentBrowserView.webContents.getURL();
-    const title = await currentBrowserView.webContents.executeJavaScript('document.title');
-    const encoding = await currentBrowserView.webContents.executeJavaScript('document.characterSet || document.charset || "未知"');
-    
-    return {
-      url: url || '',
-      title: title || '',
-      encoding: encoding || '未知'
+    const result = await autoUpdater.checkForUpdates();
+    return { 
+      success: true, 
+      updateAvailable: result.updateInfo.version !== app.getVersion(),
+      currentVersion: app.getVersion(),
+      latestVersion: result.updateInfo.version
     };
   } catch (error) {
-    return {
-      url: currentBrowserView.webContents.getURL() || '',
-      title: '',
-      encoding: '未知'
-    };
+    return { success: false, error: error.message };
   }
 });
 
+autoUpdater.on('update-available', (info) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-available', {
+      version: info.version
+    });
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-downloaded', {
+      version: info.version
+    });
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-error', {
+      error: err.message
+    });
+  }
+});
+
+ipcMain.handle('install-update', async () => {
+  autoUpdater.quitAndInstall();
+});

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { electronAPI } from '../utils/electron';
@@ -14,8 +14,10 @@ export const useShortcuts = () => {
     showToast,
     handleCmdSPress,
     setIsFindBarOpen,
-    setIsEditorConfigOpen
+    setIsEditorConfigOpen,
+    getMRUProjects
   } = useApp();
+  
 
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
 
@@ -66,6 +68,11 @@ export const useShortcuts = () => {
         }
         break;
       }
+      case 'toggle-devtools':
+        if (electronAPI.isAvailable()) {
+          electronAPI.browserViewDevTools();
+        }
+        break;
       default:
         break;
     }
@@ -135,6 +142,7 @@ export const useShortcuts = () => {
         handleShortcutAction('go-forward');
         return;
       }
+
     };
 
     window.addEventListener('keydown', handleKeyDown, true);

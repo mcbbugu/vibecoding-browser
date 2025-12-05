@@ -10,7 +10,7 @@ export const DEVICES = [
 
 export const DeviceSelector = ({ selectedDevice, onSelectDevice }) => {
   return (
-    <div className="flex items-center gap-1 px-1.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+    <div className="flex items-center gap-1 px-1.5 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg app-no-drag">
       {DEVICES.map((device) => {
         const Icon = device.icon;
         const isSelected = selectedDevice.name === device.name;

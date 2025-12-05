@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const BrowserContent = ({ 
   browserContainerRef,
@@ -11,6 +12,7 @@ export const BrowserContent = ({
   onOpenEdit,
   showToast
 }) => {
+  const { t } = useTranslation();
   return (
     <div 
       className={`flex-1 relative bg-zinc-100 dark:bg-[#0e0e10] overflow-hidden ${selectedDevice.category !== 'desktop' ? 'flex items-center justify-center p-4' : ''}`}
@@ -42,25 +44,25 @@ export const BrowserContent = ({
               <AlertCircle size={36} className="text-zinc-400" />
             </div>
           </div>
-          <h3 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200">Service Stopped</h3>
+          <h3 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200">{t('browser.serviceStopped')}</h3>
           <p className="text-zinc-500 text-base mt-2 mb-8 text-center max-w-xs leading-relaxed">
-            The development server for <br/><span className="font-medium text-zinc-800 dark:text-zinc-200">{project.name}</span> is currently inactive.
+            {t('browser.serviceStoppedDesc', { name: project.name })}
           </p>
           <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center">
-            Please start the server in your code editor to preview.
+            {t('browser.serviceStoppedHint')}
           </p>
         </div>
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#0e0e10] z-10 transition-colors text-center px-6">
-          <h3 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100 mb-4">Enter a URL to browse</h3>
+          <h3 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100 mb-4">{t('browser.enterUrl')}</h3>
           <p className="text-zinc-500 dark:text-zinc-400 mb-6 max-w-md">
-            This project doesn't require a local server. Paste any website URL above or edit the project details.
+            {t('browser.enterUrlDesc')}
           </p>
           <button
             onClick={() => onOpenEdit(project.id)}
             className="px-6 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all shadow-lg"
           >
-            Edit Project
+            {t('browser.editProject')}
           </button>
         </div>
       )}

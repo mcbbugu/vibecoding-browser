@@ -33,7 +33,8 @@ export const BrowserView = ({
   onScanPorts,
   isEditModalOpen,
   isSearchOpen,
-  isSettingsOpen
+  isSettingsOpen,
+  isTabSwitcherOpen
 }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
@@ -46,6 +47,7 @@ export const BrowserView = ({
   });
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const { isFullScreen } = useApp();
   const browserContainerRef = React.useRef(null);
   const projectUrlRef = React.useRef(null);
   const projectIdRef = React.useRef(null);
@@ -63,7 +65,7 @@ export const BrowserView = ({
 
 
   useEffect(() => {
-    const isModalOpen = isEditModalOpen || isEditorConfigOpen || isSearchOpen || isSettingsOpen;
+    const isModalOpen = isEditModalOpen || isEditorConfigOpen || isSearchOpen || isSettingsOpen || isTabSwitcherOpen;
     if (electronAPI.isAvailable()) {
       if (isModalOpen) {
         electronAPI.browserViewHide();
@@ -74,7 +76,7 @@ export const BrowserView = ({
         }
       }
     }
-  }, [isEditModalOpen, isEditorConfigOpen, isSearchOpen, isSettingsOpen, project, canDisplayWebview]);
+  }, [isEditModalOpen, isEditorConfigOpen, isSearchOpen, isSettingsOpen, isTabSwitcherOpen, project, canDisplayWebview]);
 
   useEffect(() => {
     const checkNavigationState = async () => {
@@ -127,11 +129,9 @@ export const BrowserView = ({
       };
     } else if (!project || !canDisplayWebview) {
       if (electronAPI.isAvailable() && loadAttemptedRef.current) {
-        electronAPI.browserViewRemove(projectIdRef.current);
-        loadAttemptedRef.current = false;
+        electronAPI.browserViewHide();
         projectIdRef.current = null;
         projectUrlRef.current = null;
-        setUrl('');
       }
     }
   }, [project?.id, project?.url, canDisplayWebview, isSidebarCollapsed]);
@@ -250,8 +250,8 @@ export const BrowserView = ({
         }`}
       >
       <div 
-        className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center px-5 gap-4 select-none bg-zinc-50 dark:bg-sidebar transition-colors relative app-drag-region" 
-        style={{ zIndex: Z_INDEX.BROWSER_TOOLBAR, paddingLeft: isSidebarCollapsed ? '76px' : '20px' }}
+        className="h-14 border-b border-zinc-100 dark:border-white/5 flex items-center pr-5 gap-4 select-none bg-zinc-50 dark:bg-sidebar transition-colors relative app-drag-region" 
+        style={{ zIndex: Z_INDEX.BROWSER_TOOLBAR, paddingLeft: isSidebarCollapsed ? '88px' : '20px' }}
         onDoubleClick={(e) => { if (e.target === e.currentTarget) window.electronAPI?.toggleMaximize?.(); }}
       >
             <BrowserToolbar 
