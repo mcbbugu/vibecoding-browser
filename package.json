@@ -9,7 +9,8 @@
     "electron": "electron .",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "start": "npm run electron:dev",
-    "package": "electron-builder --publish always"
+    "adjust-icon": "node scripts/adjust-icon.js",
+    "package": "npm run adjust-icon && electron-builder --publish always"
   },
   "keywords": [],
   "author": "",
@@ -64,8 +65,11 @@
         }
       ],
       "category": "public.app-category.developer-tools",
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "identity": "Apple Development: 1443786299@qq.com (359CJC8MPB)",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "publish": [
       {
