@@ -239,7 +239,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
       <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-4 mb-3">
           <img 
-            src="/assets/logo.png" 
+            src={isDarkMode ? "/assets/logo-dark.svg" : "/assets/logo-light.svg"} 
             alt="DevDock" 
             className="h-12 w-auto"
           />

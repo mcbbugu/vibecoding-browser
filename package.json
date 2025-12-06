@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "electron": "electron .",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"vite\" \"sleep 2 && cross-env NODE_ENV=development electron .\"",
     "start": "npm run electron:dev",
     "adjust-icon": "node scripts/adjust-icon.js",
     "package": "npm run adjust-icon && electron-builder --publish always"
