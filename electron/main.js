@@ -1,6 +1,8 @@
-const { app, BrowserWindow, ipcMain, shell, globalShortcut, dialog, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, globalShortcut, dialog, clipboard, nativeImage, session } = require('electron');
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
+const { spawn } = require('child_process');
 const Store = require('electron-store');
 const { autoUpdater } = require('electron-updater');
 const { scanPort, scanCommonPorts, scanDevelopmentPorts, scanAllPorts } = require('./services/port-scanner');
@@ -70,6 +72,7 @@ function createWindow() {
     minHeight: 700,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#111111',
+    icon: path.join(__dirname, '../assets/icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -142,6 +145,7 @@ app.whenReady().then(() => {
   
   registerTerminalHandlers();
   registerBrowserHandlers();
+  setupDownloadHandler();
 
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify();
@@ -479,3 +483,17 @@ autoUpdater.on('error', (err) => {
 ipcMain.handle('install-update', async () => {
   autoUpdater.quitAndInstall();
 });
+
+// 下载处理：拦截下载并用系统浏览器打开
+function setupDownloadHandler() {
+  session.defaultSession.on('will-download', (event, item, webContents) => {
+    // 取消下载
+    event.preventDefault();
+    
+    // 获取下载 URL
+    const url = item.getURL();
+    
+    // 用系统默认浏览器打开
+    shell.openExternal(url);
+  });
+}

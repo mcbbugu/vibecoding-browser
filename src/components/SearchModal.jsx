@@ -64,7 +64,7 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject, onQuic
   return (
     <div className="fixed inset-0 flex items-start justify-center pt-[15vh] bg-zinc-900/10 dark:bg-black/20 backdrop-blur-[2px] transition-all duration-300" style={{ zIndex: Z_INDEX.MODAL_BACKDROP }} onClick={onClose}>
       <div 
-        className="w-full max-w-xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-black/50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5"
+        className="w-full max-w-xl bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/10 rounded-2xl shadow-2xl dark:shadow-black/50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center px-5 border-b border-zinc-100 dark:border-white/5 h-16">
@@ -133,7 +133,7 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject, onQuic
             ) : null}
         </div>
         
-        <div className="px-5 py-3 bg-zinc-50 dark:bg-[#151518] border-t border-zinc-100 dark:border-white/5 flex items-center justify-end text-[10px] text-zinc-400 dark:text-zinc-500">
+        <div className="px-5 py-3 bg-zinc-50 dark:bg-[#09090b] border-t border-zinc-100 dark:border-white/5 flex items-center justify-end text-[10px] text-zinc-400 dark:text-zinc-500">
             <div className="flex items-center gap-1.5">
                 <kbd className="font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded shadow-sm">⌘T</kbd>
                 <span>{t('search.openSearch')}</span>

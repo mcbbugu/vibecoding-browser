@@ -45,7 +45,7 @@ export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth
         ref={menuRef}
         style={style}
         data-context-menu="true"
-        className="fixed w-48 bg-white/90 dark:bg-[#1c1c1f]/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 animate-fade-in origin-top-left flex flex-col"
+        className="fixed w-48 bg-white/90 dark:bg-[#0c0c0e]/95 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 animate-fade-in origin-top-left flex flex-col"
     >
        <div className="px-3 py-2 border-b border-zinc-100 dark:border-white/5 mb-1">
            <p className="text-xs font-bold text-zinc-800 dark:text-white truncate">{project.name}</p>
@@ -62,10 +62,9 @@ export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth
              <FolderOpen size={12} />
              {t('action.openInFinder')}
            </button>
+           <div className="h-[1px] bg-zinc-100 dark:bg-white/10 my-1 mx-2" />
          </>
        )}
-
-       <div className="h-[1px] bg-zinc-100 dark:bg-white/10 my-1 mx-2" />
 
        <button onClick={() => onAction('pin', project.id)} className={MENU_BUTTON_CLASS}>
           {project.pinned ? <PinOff size={12} /> : <Pin size={12} />}

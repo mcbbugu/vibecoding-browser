@@ -76,7 +76,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
       }}
     >
       <div 
-        className="w-full max-w-lg bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-2xl border border-zinc-200 dark:border-white/10 overflow-hidden"
+        className="w-full max-w-lg bg-white dark:bg-[#0c0c0e] rounded-2xl shadow-2xl border border-zinc-200 dark:border-white/10 overflow-hidden"
         style={{ zIndex: Z_INDEX.MODAL_CONTENT }}
         onClick={e => e.stopPropagation()}
       >

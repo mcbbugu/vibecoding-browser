@@ -105,7 +105,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
       onClick={handleBackdropClick}
     >
       <div 
-        className="w-full max-w-md bg-white dark:bg-[#1c1c1f] rounded-2xl shadow-2xl border border-zinc-200 dark:border-white/10 overflow-hidden"
+        className="w-full max-w-md bg-white dark:bg-[#0c0c0e] rounded-2xl shadow-2xl border border-zinc-200 dark:border-white/10 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/10">

@@ -10,7 +10,8 @@
     "electron:dev": "concurrently \"vite\" \"sleep 2 && cross-env NODE_ENV=development electron .\"",
     "start": "npm run electron:dev",
     "adjust-icon": "node scripts/adjust-icon.js",
-    "package": "npm run adjust-icon && electron-builder --publish always"
+    "clean": "rm -rf dist/mac* dist/*.dmg* dist/*.icns release",
+    "package": "npm run clean && npm run adjust-icon && electron-builder --publish always"
   },
   "keywords": [],
   "author": "",
@@ -44,13 +45,15 @@
   },
   "build": {
     "appId": "com.vibecoding.devdock",
-    "productName": "VibeCoding DevDock",
+    "productName": "DevDock",
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "package.json"
     ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "release"
     },
     "mac": {
       "icon": "assets/icon.icns",

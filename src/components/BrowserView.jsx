@@ -23,7 +23,8 @@ export const BrowserView = ({
   projects, 
   onSelectProject, 
   showToast, 
-  onOpenEdit, 
+  onOpenEdit,
+  onOpenEditor, 
   onDeleteProject, 
   onPinProject,
   onReorderProjects,
@@ -222,7 +223,7 @@ export const BrowserView = ({
 
   return (
     <>
-    <div className="flex-1 h-screen flex flex-col bg-zinc-50 dark:bg-[#111111] overflow-hidden transition-colors duration-300">
+    <div className="flex-1 h-screen flex flex-col bg-zinc-50 dark:bg-[#09090b] overflow-hidden transition-colors duration-300">
       <div 
         className={`flex-1 overflow-hidden flex-col transition-opacity duration-300 ${
           !project 
@@ -234,6 +235,7 @@ export const BrowserView = ({
           projects={projects} 
           onSelectProject={onSelectProject} 
           onOpenEdit={onOpenEdit}
+          onOpenEditor={onOpenEditor}
           onDeleteProject={onDeleteProject}
           onPinProject={onPinProject}
           onReorderProjects={onReorderProjects}
@@ -243,7 +245,7 @@ export const BrowserView = ({
       </div>
       
       <div 
-        className={`flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-[#111111] ${
+        className={`flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-[#09090b] ${
           project 
             ? 'flex opacity-100 relative z-10' 
             : 'absolute inset-0 invisible opacity-0 pointer-events-none z-[-1]'
@@ -291,7 +293,7 @@ export const BrowserView = ({
             />
       </div>
       
-      <div className="flex-1 bg-white dark:bg-[#1c1c1f] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative transition-colors duration-300">
+      <div className="flex-1 bg-white dark:bg-[#0c0c0e] flex flex-col overflow-hidden shadow-[0_0_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative transition-colors duration-300">
 
           <BrowserContent 
             browserContainerRef={browserContainerRef}

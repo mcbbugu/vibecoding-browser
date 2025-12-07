@@ -15,7 +15,7 @@ export const BrowserContent = ({
   const { t } = useTranslation();
   return (
     <div 
-      className={`flex-1 relative bg-zinc-100 dark:bg-[#0e0e10] overflow-hidden ${selectedDevice.category !== 'desktop' ? 'flex items-center justify-center p-4' : ''}`}
+      className={`flex-1 relative bg-zinc-100 dark:bg-[#09090b] overflow-hidden ${selectedDevice.category !== 'desktop' ? 'flex items-center justify-center p-4' : ''}`}
     >
       {canDisplayWebview ? (
         <>
@@ -37,7 +37,7 @@ export const BrowserContent = ({
           />
         </>
       ) : requiresLocalService ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#0e0e10] z-10 transition-colors">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#09090b] z-10 transition-colors">
           <div className="relative mb-8">
             <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full transition-colors duration-500" />
             <div className="w-24 h-24 rounded-3xl bg-white dark:bg-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shadow-2xl relative z-10">
@@ -53,7 +53,7 @@ export const BrowserContent = ({
           </p>
         </div>
       ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#0e0e10] z-10 transition-colors text-center px-6">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-50 dark:bg-[#09090b] z-10 transition-colors text-center px-6">
           <h3 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-100 mb-4">{t('browser.enterUrl')}</h3>
           <p className="text-zinc-500 dark:text-zinc-400 mb-6 max-w-md">
             {t('browser.enterUrlDesc')}

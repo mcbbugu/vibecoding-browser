@@ -152,14 +152,14 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex w-screen h-screen items-center justify-center bg-zinc-50 dark:bg-[#111111]">
+      <div className="flex w-screen h-screen items-center justify-center bg-zinc-50 dark:bg-[#09090b]">
         <div className="text-zinc-500 dark:text-zinc-400">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex w-screen h-screen bg-zinc-50 dark:bg-[#111111] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
+    <div className="flex w-screen h-screen bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 font-sans transition-colors duration-300 overflow-hidden">
       {isSidebarCollapsed && !activeProjectId && (
         <div className="fixed left-4 top-8 flex items-center gap-2 z-50">
           <button
@@ -206,6 +206,7 @@ function App() {
         projects={projects}
         onSelectProject={handleSelectProject}
         onOpenEdit={handleOpenEditModal}
+        onOpenEditor={openEditor}
         onDeleteProject={handleDeleteProjectWithCleanup}
         onPinProject={handlePinProject}
         onReorderProjects={handleReorderProjects}

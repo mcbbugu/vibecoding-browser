@@ -24,7 +24,7 @@ const ProjectCard = React.memo(({ project, isHighlighted }) => {
   return (
     <div
       className={`
-        flex flex-col rounded-xl bg-white dark:bg-[#1c1c1f] border p-3 transition-all duration-200 text-left w-[280px] shrink-0
+        flex flex-col rounded-xl bg-white dark:bg-[#0c0c0e] border p-3 transition-all duration-200 text-left w-[280px] shrink-0
         ${isHighlighted 
           ? 'border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105 ring-2 ring-indigo-500/50' 
           : 'border-zinc-200 dark:border-white/5 opacity-60'

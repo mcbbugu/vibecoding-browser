@@ -39,7 +39,7 @@ const CardContent = React.memo(({ project, refreshKey = 0 }) => {
   const { containerRef, previewError, isLoading, canPreview } = useIframePreview(project.url, shouldPreview, refreshKey);
 
   return (
-    <div className="flex flex-col rounded-xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/5 p-3 transition-all duration-200 text-left w-full group hover:shadow-md">
+    <div className="flex flex-col rounded-xl bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/5 p-3 transition-all duration-200 text-left w-full group hover:shadow-md">
       <div className={`relative w-full aspect-video rounded-lg overflow-hidden bg-gradient-to-br ${gradient} pointer-events-none`}>
         {canPreview && project.url ? (
           <>
@@ -74,7 +74,7 @@ const CardContent = React.memo(({ project, refreshKey = 0 }) => {
           <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">{project.name || host}</p>
           <Circle size={6} className={project.status === 'running' ? 'text-emerald-500 fill-emerald-500 shrink-0' : 'text-zinc-400 fill-zinc-400 shrink-0'} />
         </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{project.path || project.url}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{project.url || project.path}</p>
       </div>
     </div>
   );
@@ -141,7 +141,7 @@ const DragOverlayCard = ({ project }) => {
   
   return (
     <div className="shadow-2xl scale-105 rotate-2 opacity-95 w-[280px] rounded-xl overflow-hidden">
-      <div className="flex flex-col rounded-xl bg-white dark:bg-[#1c1c1f] border border-zinc-200 dark:border-white/5 p-3">
+      <div className="flex flex-col rounded-xl bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-white/5 p-3">
         <div className={`relative w-full aspect-video rounded-lg overflow-hidden bg-gradient-to-br ${gradient}`}>
           <div className="absolute inset-0 flex items-center justify-center">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('dashboard.dragging')}</p>
@@ -152,7 +152,7 @@ const DragOverlayCard = ({ project }) => {
             <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">{project.name || host}</p>
             <Circle size={6} className={project.status === 'running' ? 'text-emerald-500 fill-emerald-500 shrink-0' : 'text-zinc-400 fill-zinc-400 shrink-0'} />
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{project.path || project.url}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{project.url || project.path}</p>
         </div>
       </div>
     </div>
@@ -173,7 +173,7 @@ const DroppableZone = ({ id, children, className }) => {
   );
 };
 
-export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, onDeleteProject, onPinProject, onReorderProjects, showToast }) => {
+export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, onOpenEditor, onDeleteProject, onPinProject, onReorderProjects, showToast }) => {
   const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState(null);
   const [isPinnedRefreshing, setIsPinnedRefreshing] = useState(false);
@@ -286,7 +286,7 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex-1 h-full overflow-hidden flex flex-col bg-zinc-50 dark:bg-[#111111] transition-colors duration-300 border-0">
+      <div className="flex-1 h-full overflow-hidden flex flex-col bg-zinc-50 dark:bg-[#09090b] transition-colors duration-300 border-0">
         {/* 顶部拖拽区域 */}
         <div 
           className="h-10 shrink-0 app-drag-region"
@@ -401,6 +401,13 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
               switch (action) {
                 case 'open':
                   if (project?.url) window.open(project.url, '_blank');
+                  break;
+                case 'open-ide':
+                  if (project?.path) {
+                    onOpenEditor?.(project);
+                  } else {
+                    showToast('Project path not set', 'error');
+                  }
                   break;
                 case 'finder':
                   if (project?.path) {
