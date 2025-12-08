@@ -3,10 +3,12 @@ import { RefreshCw, Pin, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
   PointerSensor,
   useSensor,
-  useSensors
+  useSensors,
+  useDroppable,
+  DragOverlay
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -14,6 +16,61 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+const DroppableZone = ({ id, children, className }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`${className} ${isOver ? 'bg-accent-500/10 rounded-lg' : ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const DragOverlayItem = ({ project, isCollapsed }) => {
+  if (!project) return null;
+  return (
+    <div className={`
+      flex items-center rounded-xl relative border touch-none
+      bg-white dark:bg-zinc-800/90 text-zinc-900 dark:text-white shadow-lg border-zinc-200 dark:border-white/10
+      ${isCollapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2.5'}
+      scale-105 rotate-1
+    `}>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {!isCollapsed && (
+          <>
+            <div className={`
+              w-2 h-2 rounded-full shrink-0
+              ${project.status === 'running' ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'}
+              ${project.status === 'error' ? 'bg-rose-500' : ''}
+            `} />
+            <div className="flex-1 min-w-0 flex flex-col">
+              <span className="text-sm font-medium truncate">{project.name}</span>
+              {project.url && (() => {
+                try {
+                  const url = new URL(project.url);
+                  const host = url.hostname;
+                  const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+                  return (
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate mt-0.5">
+                      {host}:{port}
+                    </span>
+                  );
+                } catch {
+                  const displayUrl = project.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                  return (
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono truncate mt-0.5">
+                      {displayUrl}
+                    </span>
+                  );
+                }
+              })()}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const SortableProjectItem = ({ project, isActive, isCollapsed, onContextMenu, onSelectProject }) => {
   const {
@@ -27,7 +84,9 @@ const SortableProjectItem = ({ project, isActive, isCollapsed, onContextMenu, on
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 'auto'
   };
 
   return (
@@ -97,6 +156,8 @@ export const ProjectList = ({
   const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeId, setActiveId] = useState(null);
+  
+  const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -126,6 +187,8 @@ export const ProjectList = ({
   const discoveredIds = useMemo(() => discoveredProjects.map(p => p.id), [discoveredProjects]);
 
   const findContainer = (id) => {
+    if (id === 'pinned-zone') return 'pinned';
+    if (id === 'discovered-zone') return 'discovered';
     if (pinnedIds.includes(id)) return 'pinned';
     if (discoveredIds.includes(id)) return 'discovered';
     return null;
@@ -136,16 +199,8 @@ export const ProjectList = ({
   };
 
   const handleDragOver = (event) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeContainer = findContainer(active.id);
-    const overContainer = findContainer(over.id);
-
-    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
-
-    const shouldPin = overContainer === 'pinned';
-    onPinProject?.(active.id, shouldPin);
+    // 只做视觉反馈，不执行状态更新
+    // 实际的 pin/unpin 在 handleDragEnd 中执行
   };
 
   const handleDragEnd = (event) => {
@@ -159,15 +214,21 @@ export const ProjectList = ({
 
     if (!activeContainer || !overContainer) return;
 
-    if (activeContainer === overContainer && active.id !== over.id) {
-      onReorderProjects?.(active.id, over.id, overContainer);
+    if (activeContainer === overContainer) {
+      if (over.id !== 'pinned-zone' && over.id !== 'discovered-zone' && active.id !== over.id) {
+        onReorderProjects?.(active.id, over.id, overContainer);
+      }
+    } else {
+      const shouldPin = overContainer === 'pinned';
+      const targetId = over.id !== 'pinned-zone' && over.id !== 'discovered-zone' ? over.id : null;
+      onPinProject?.(active.id, shouldPin, targetId);
     }
   };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -192,24 +253,26 @@ export const ProjectList = ({
             )}
           </div>
           <SortableContext items={pinnedIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1.5">
-              {pinnedProjects.length === 0 ? (
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center py-3">
-                  {t('dashboard.emptyPinned')}
-                </div>
-              ) : (
-                pinnedProjects.map(project => (
-                  <SortableProjectItem
-                    key={project.id}
-                    project={project}
-                    isActive={activeProjectId === project.id}
-                    isCollapsed={isCollapsed}
-                    onContextMenu={onContextMenu}
-                    onSelectProject={onSelectProject}
-                  />
-                ))
-              )}
-            </div>
+            <DroppableZone id="pinned-zone" className="min-h-[40px] transition-colors">
+              <div className="space-y-1.5">
+                {pinnedProjects.length === 0 ? (
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center py-3">
+                    {t('dashboard.emptyPinned')}
+                  </div>
+                ) : (
+                  pinnedProjects.map(project => (
+                    <SortableProjectItem
+                      key={project.id}
+                      project={project}
+                      isActive={activeProjectId === project.id}
+                      isCollapsed={isCollapsed}
+                      onContextMenu={onContextMenu}
+                      onSelectProject={onSelectProject}
+                    />
+                  ))
+                )}
+              </div>
+            </DroppableZone>
           </SortableContext>
         </div>
 
@@ -232,27 +295,33 @@ export const ProjectList = ({
             )}
           </div>
           <SortableContext items={discoveredIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1.5">
-              {discoveredProjects.length === 0 ? (
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center py-3">
-                  {t('dashboard.emptyDiscover')}
-                </div>
-              ) : (
-                discoveredProjects.map(project => (
-                  <SortableProjectItem
-                    key={project.id}
-                    project={project}
-                    isActive={activeProjectId === project.id}
-                    isCollapsed={isCollapsed}
-                    onContextMenu={onContextMenu}
-                    onSelectProject={onSelectProject}
-                  />
-                ))
-              )}
-            </div>
+            <DroppableZone id="discovered-zone" className="min-h-[40px] transition-colors">
+              <div className="space-y-1.5">
+                {discoveredProjects.length === 0 ? (
+                  <div className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center py-3">
+                    {t('dashboard.emptyDiscover')}
+                  </div>
+                ) : (
+                  discoveredProjects.map(project => (
+                    <SortableProjectItem
+                      key={project.id}
+                      project={project}
+                      isActive={activeProjectId === project.id}
+                      isCollapsed={isCollapsed}
+                      onContextMenu={onContextMenu}
+                      onSelectProject={onSelectProject}
+                    />
+                  ))
+                )}
+              </div>
+            </DroppableZone>
           </SortableContext>
         </div>
       </div>
+      
+      <DragOverlay>
+        <DragOverlayItem project={activeProject} isCollapsed={isCollapsed} />
+      </DragOverlay>
     </DndContext>
   );
 };

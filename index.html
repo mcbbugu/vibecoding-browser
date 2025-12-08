@@ -18,7 +18,18 @@
               sidebar: '#0c0c0e',
               bg: '#09090b',
               card: '#0c0c0e',
-              accent: '#3b82f6',
+              accent: {
+                50: 'var(--accent-50, #fafafa)',
+                100: 'var(--accent-100, #f4f4f5)',
+                200: 'var(--accent-200, #e4e4e7)',
+                300: 'var(--accent-300, #d4d4d8)',
+                400: 'var(--accent-400, #a1a1aa)',
+                500: 'var(--accent-500, #71717a)',
+                600: 'var(--accent-600, #52525b)',
+                700: 'var(--accent-700, #3f3f46)',
+                800: 'var(--accent-800, #27272a)',
+                900: 'var(--accent-900, #18181b)',
+              },
             },
             animation: {
               'fade-in': 'fadeIn 0.2s ease-in-out',
@@ -72,7 +83,7 @@
       }
     </style>
 </head>
-  <body class="bg-zinc-50 dark:bg-bg text-zinc-900 dark:text-zinc-100 overflow-hidden h-screen w-screen selection:bg-indigo-500/30">
+  <body class="bg-zinc-50 dark:bg-bg text-zinc-900 dark:text-zinc-100 overflow-hidden h-screen w-screen selection:bg-accent-500/30">
     <div id="root" class="h-screen w-screen"></div>
     <script type="module" src="/src/index.jsx"></script>
 </body>

@@ -157,7 +157,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                 <select
                   value={selectedHost}
                   onChange={(e) => setSelectedHost(e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500 text-base"
                 >
                   {localIPs.map(ip => (
                     <option key={ip} value={ip}>{ip === 'localhost' || ip === '127.0.0.1' ? 'localhost' : ip}</option>
@@ -170,7 +170,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                   type="number"
                   value={port}
                   onChange={(e) => setPort(e.target.value)}
-                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500 text-base"
                   placeholder="3000"
                   min="1"
                   max="65535"
@@ -186,7 +186,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base"
+                className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500 text-base"
                 placeholder="example.com"
                 autoFocus
                 required
@@ -204,7 +204,7 @@ export const UrlInputModal = ({ isOpen, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg transition-colors"
             >
               {t('action.create')}
             </button>

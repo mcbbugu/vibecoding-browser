@@ -89,8 +89,8 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+          <div className="bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 rounded-lg p-3">
+            <p className="text-xs text-accent-700 dark:text-accent-300 leading-relaxed">
               {t('settings.editorHint')}
             </p>
           </div>
@@ -105,7 +105,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
                   key={editor.id}
                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                     selectedEditor === editor.id
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/20'
                       : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
                   }`}
                 >
@@ -115,7 +115,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
                     value={editor.id}
                     checked={selectedEditor === editor.id}
                     onChange={() => setSelectedEditor(editor.id)}
-                    className="w-4 h-4 text-indigo-500"
+                    className="w-4 h-4 text-accent-500"
                   />
                   <span className="text-sm text-zinc-700 dark:text-zinc-300">{editor.name}</span>
                   <span className="text-xs text-zinc-400 ml-auto font-mono">{editor.command}</span>
@@ -127,7 +127,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
                   key={editor.id}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                     selectedEditor === editor.id
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/20'
                       : 'border-zinc-200 dark:border-zinc-700'
                   }`}
                 >
@@ -137,21 +137,21 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
                     value={editor.id}
                     checked={selectedEditor === editor.id}
                     onChange={() => setSelectedEditor(editor.id)}
-                    className="w-4 h-4 text-indigo-500"
+                    className="w-4 h-4 text-accent-500"
                   />
               <input
                 type="text"
                 value={editor.name}
                 onChange={(e) => handleCustomEditorChange(editor.id, 'name', e.target.value)}
                 placeholder={t('editorConfig.namePlaceholder')}
-                className="flex-1 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500"
+                className="flex-1 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-accent-500"
               />
               <input
                 type="text"
                 value={editor.command}
                 onChange={(e) => handleCustomEditorChange(editor.id, 'command', e.target.value)}
                 placeholder={t('editorConfig.commandPlaceholder')}
-                className="w-24 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-xs font-mono text-zinc-400 focus:outline-none focus:border-indigo-500"
+                className="w-24 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-xs font-mono text-zinc-400 focus:outline-none focus:border-accent-500"
               />
                   <button
                     onClick={() => handleRemoveCustomEditor(editor.id)}
@@ -181,7 +181,7 @@ export const EditorConfigModal = ({ isOpen, onClose, showToast }) => {
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
+              className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg flex items-center gap-2"
             >
               <Save size={16} />
               {t('action.save')}

@@ -48,7 +48,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   browserViewCopy: () => ipcRenderer.invoke('browser-view-copy'),
   browserViewPaste: () => ipcRenderer.invoke('browser-view-paste'),
   browserViewSelectAll: () => ipcRenderer.invoke('browser-view-select-all'),
-  browserViewViewSource: () => ipcRenderer.invoke('browser-view-view-source'),
   browserViewSaveAs: () => ipcRenderer.invoke('browser-view-save-as'),
   browserViewPrint: () => ipcRenderer.invoke('browser-view-print'),
   browserViewGetPageInfo: () => ipcRenderer.invoke('browser-view-get-page-info'),

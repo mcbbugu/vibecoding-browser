@@ -21,7 +21,7 @@ export const BrowserContent = ({
         <>
           {isLoading && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-transparent overflow-hidden z-20">
-              <div className="h-full bg-indigo-500 animate-loading-bar w-1/3 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+              <div className="h-full bg-accent-500 animate-loading-bar w-1/3 shadow-[0_0_10px_var(--accent-500)]"></div>
             </div>
           )}
           <div 
@@ -60,7 +60,7 @@ export const BrowserContent = ({
           </p>
           <button
             onClick={() => onOpenEdit(project.id)}
-            className="px-6 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all shadow-lg"
+            className="px-6 py-2.5 rounded-xl bg-accent-600 text-white text-sm font-medium hover:bg-accent-700 transition-all shadow-lg"
           >
             {t('browser.editProject')}
           </button>

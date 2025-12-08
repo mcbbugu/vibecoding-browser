@@ -76,7 +76,6 @@ export const electronAPI = {
   browserViewCopy: safeInvoke('browserViewCopy', { success: false }),
   browserViewPaste: safeInvoke('browserViewPaste', { success: false }),
   browserViewSelectAll: safeInvoke('browserViewSelectAll', { success: false }),
-  browserViewViewSource: safeInvoke('browserViewViewSource', { success: false }),
   browserViewSaveAs: safeInvoke('browserViewSaveAs', { success: false }),
   browserViewPrint: safeInvoke('browserViewPrint', { success: false }),
   browserViewGetPageInfo: safeInvoke('browserViewGetPageInfo', null),

@@ -3,7 +3,8 @@ import { RefreshCw, Pin, Zap, Circle, MonitorX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { 
   DndContext, 
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -46,7 +47,7 @@ const CardContent = React.memo(({ project, refreshKey = 0 }) => {
             {isLoading && (
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center z-10">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs text-zinc-500 dark:text-zinc-400">{t('dashboard.previewLoading')}</span>
                 </div>
               </div>
@@ -166,7 +167,7 @@ const DroppableZone = ({ id, children, className }) => {
     <div
       ref={setNodeRef}
       id={id}
-      className={`${className} ${isOver ? 'ring-2 ring-indigo-500 ring-opacity-50' : ''}`}
+      className={`${className} ${isOver ? 'ring-2 ring-accent-500 ring-opacity-50' : ''}`}
     >
       {children}
     </div>
@@ -222,18 +223,8 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
   };
 
   const handleDragOver = (event) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    const activeContainer = findContainer(active.id);
-    const overContainer = over.id === 'pinned-zone' ? 'pinned'
-      : over.id === 'discovered-zone' ? 'discovered'
-      : findContainer(over.id);
-
-    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
-
-    const shouldPin = overContainer === 'pinned';
-    onPinProject?.(active.id, shouldPin, over.id !== 'pinned-zone' && over.id !== 'discovered-zone' ? over.id : null);
+    // 只做视觉反馈，不执行状态更新
+    // 实际的 pin/unpin 在 handleDragEnd 中执行
   };
 
   const handleDragEnd = (event) => {
@@ -281,7 +272,7 @@ export const Dashboard = ({ projects, onSelectProject, onScanPorts, onOpenEdit, 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}

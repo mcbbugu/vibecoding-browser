@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Code, Keyboard, Palette, Settings as SettingsIcon, Plus, Trash2, RefreshCw, BarChart3 } from 'lucide-react';
+import { X, Check, Code, Keyboard, Palette, Settings as SettingsIcon, Plus, Trash2, RefreshCw, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { storage } from '../utils/storage';
 import { Z_INDEX } from '../utils/constants';
@@ -16,7 +16,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
   const [activeTab, setActiveTab] = useState('general');
   const [selectedEditor, setSelectedEditor] = useState('cursor');
   const [customEditors, setCustomEditors] = useState([]);
-  const [language, setLanguage] = useState(i18n.language || 'zh');
+  const [language, setLanguage] = useState((i18n.language || 'zh').split('-')[0]);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
@@ -49,7 +49,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
       
       setSelectedEditor(savedEditor);
       setCustomEditors(savedCustomEditors);
-      setLanguage(i18n.language || 'zh');
+      setLanguage((i18n.language || 'zh').split('-')[0]);
       setAnalyticsEnabled(savedAnalytics);
       setAppVersion(version);
       setUpdateInfo(null);
@@ -138,8 +138,6 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     await window.electronAPI.installUpdate();
   };
 
-  const allEditors = [...presetEditors, ...customEditors];
-
   const tabs = [
     { id: 'general', labelKey: 'settings.general', icon: SettingsIcon },
     { id: 'editor', labelKey: 'settings.editor', icon: Code },
@@ -147,246 +145,278 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     { id: 'appearance', labelKey: 'settings.appearance', icon: Palette },
   ];
 
-  const renderEditorTab = () => (
-    <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-        <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-          {t('settings.editorHint')}
-        </p>
+  const RadioOption = ({ selected, onClick, children }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all
+        ${selected 
+          ? 'bg-zinc-100 dark:bg-white/5' 
+          : 'hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
+        }
+      `}
+    >
+      <span className={`text-sm ${selected ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'}`}>
+        {children}
+      </span>
+      <div className={`
+        w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
+        ${selected 
+          ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100' 
+          : 'border-zinc-300 dark:border-zinc-600'
+        }
+      `}>
+        {selected && <Check size={10} className="text-white dark:text-zinc-900" strokeWidth={3} />}
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          {t('settings.editor')}
-        </label>
-        <div className="space-y-2">
-          {presetEditors.map(editor => (
-            <label
-              key={editor.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                selectedEditor === editor.id
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <input
-                type="radio"
-                name="editor"
-                value={editor.id}
-                checked={selectedEditor === editor.id}
-                onChange={() => setSelectedEditor(editor.id)}
-                className="w-4 h-4 text-indigo-500"
-              />
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">{editor.name}</span>
-              <span className="text-xs text-zinc-400 ml-auto font-mono">{editor.command}</span>
-            </label>
-          ))}
-          
-          {customEditors.map(editor => (
-            <div
-              key={editor.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                selectedEditor === editor.id
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-zinc-200 dark:border-zinc-700'
-              }`}
-            >
-              <input
-                type="radio"
-                name="editor"
-                value={editor.id}
-                checked={selectedEditor === editor.id}
-                onChange={() => setSelectedEditor(editor.id)}
-                className="w-4 h-4 text-indigo-500"
-              />
-              <input
-                type="text"
-                value={editor.name}
-                onChange={(e) => handleCustomEditorChange(editor.id, 'name', e.target.value)}
-                placeholder={t('editorConfig.namePlaceholder')}
-                className="flex-1 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-indigo-500"
-              />
-              <input
-                type="text"
-                value={editor.command}
-                onChange={(e) => handleCustomEditorChange(editor.id, 'command', e.target.value)}
-                placeholder={t('editorConfig.commandPlaceholder')}
-                className="w-24 px-2 py-1 bg-transparent border-b border-zinc-300 dark:border-zinc-600 text-xs font-mono text-zinc-400 focus:outline-none focus:border-indigo-500"
-              />
-              <button
-                onClick={() => handleRemoveCustomEditor(editor.id)}
-                className="p-1 text-zinc-400 hover:text-rose-500 transition-colors"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-        
-        <button
-          onClick={handleAddCustomEditor}
-          className="w-full mt-3 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-        >
-          <Plus size={14} />
-          {t('settings.addCustomEditor')}
-        </button>
-      </div>
-    </div>
+    </button>
   );
+
+  const Toggle = ({ checked, onChange }) => (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`
+        relative w-10 h-6 rounded-full transition-colors
+        ${checked ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-zinc-200 dark:bg-zinc-700'}
+      `}
+    >
+      <div className={`
+        absolute top-1 w-4 h-4 rounded-full transition-all
+        ${checked 
+          ? 'left-5 bg-white dark:bg-zinc-900' 
+          : 'left-1 bg-white dark:bg-zinc-400'
+        }
+      `} />
+    </button>
+  );
+
+  const renderEditorTab = () => {
+    const currentEditor = presetEditors.find(e => e.id === selectedEditor) || customEditors.find(e => e.id === selectedEditor);
+    const editorName = currentEditor?.name || 'Editor';
+    const editorCommand = currentEditor?.command || 'code';
+    
+    return (
+    <div className="space-y-4">
+      <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('settings.editorHint')}</p>
+      
+      <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+        <p className="text-xs text-amber-700 dark:text-amber-400 font-medium mb-1">{t('settings.editorSetupTitle')}</p>
+        <p className="text-xs text-amber-600 dark:text-amber-500 mb-2">{t('settings.editorSetupDesc', { editor: editorName })}</p>
+        <code className="block text-xs text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded font-mono">
+          {t('settings.editorSetupCommand', { command: editorCommand })}
+        </code>
+      </div>
+      
+      <div className="space-y-1">
+        {presetEditors.map(editor => (
+          <button
+            key={editor.id}
+            onClick={() => setSelectedEditor(editor.id)}
+            className={`
+              w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all
+              ${selectedEditor === editor.id 
+                ? 'bg-zinc-100 dark:bg-white/5' 
+                : 'hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
+              }
+            `}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`
+                w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
+                ${selectedEditor === editor.id 
+                  ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100' 
+                  : 'border-zinc-300 dark:border-zinc-600'
+                }
+              `}>
+                {selectedEditor === editor.id && <Check size={10} className="text-white dark:text-zinc-900" strokeWidth={3} />}
+              </div>
+              <span className={`text-sm ${selectedEditor === editor.id ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                {editor.name}
+              </span>
+            </div>
+            <span className="text-xs text-zinc-400 dark:text-zinc-600 font-mono">{editor.command}</span>
+          </button>
+        ))}
+        
+        {customEditors.map(editor => (
+          <div
+            key={editor.id}
+            className={`
+              flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
+              ${selectedEditor === editor.id 
+                ? 'bg-zinc-100 dark:bg-white/5' 
+                : 'hover:bg-zinc-50 dark:hover:bg-white/[0.02]'
+              }
+            `}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedEditor(editor.id)}
+              className={`
+                w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all shrink-0
+                ${selectedEditor === editor.id 
+                  ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100' 
+                  : 'border-zinc-300 dark:border-zinc-600'
+                }
+              `}
+            >
+              {selectedEditor === editor.id && <Check size={10} className="text-white dark:text-zinc-900" strokeWidth={3} />}
+            </button>
+            <input
+              type="text"
+              value={editor.name}
+              onChange={(e) => handleCustomEditorChange(editor.id, 'name', e.target.value)}
+              placeholder={t('editorConfig.namePlaceholder')}
+              className="flex-1 bg-transparent text-sm text-zinc-700 dark:text-zinc-300 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={editor.command}
+              onChange={(e) => handleCustomEditorChange(editor.id, 'command', e.target.value)}
+              placeholder={t('editorConfig.commandPlaceholder')}
+              className="w-20 bg-transparent text-xs font-mono text-zinc-400 dark:text-zinc-500 placeholder-zinc-300 dark:placeholder-zinc-700 focus:outline-none text-right"
+            />
+            <button
+              onClick={() => handleRemoveCustomEditor(editor.id)}
+              className="p-1 text-zinc-400 hover:text-rose-500 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      <button
+        onClick={handleAddCustomEditor}
+        className="w-full px-3 py-2 text-xs text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors flex items-center justify-center gap-2"
+      >
+        <Plus size={12} />
+        {t('settings.addCustomEditor')}
+      </button>
+    </div>
+  );};
 
   const renderGeneralTab = () => (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="flex items-center gap-4 mb-3">
-          <img 
-            src={isDarkMode ? "/assets/logo-dark.svg" : "/assets/logo-light.svg"} 
-            alt="DevDock" 
-            className="h-12 w-auto"
-          />
-          <div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">VibeCoding DevDock</h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.aboutDesc')}</p>
-          </div>
+      <div className="flex items-center gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/50">
+        <img 
+          src={isDarkMode ? "/assets/logo-dark.svg" : "/assets/logo-light.svg"} 
+          alt="DevDock" 
+          className="h-10 w-auto"
+        />
+        <div>
+          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">DevDock</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-500">v{appVersion}</p>
         </div>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">
-          {t('settings.version')}: {appVersion}
-        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-          {t('settings.language')}
-        </label>
-        <div className="space-y-2">
+        <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-2">{t('settings.language')}</p>
+        <div className="space-y-1">
           {LANGUAGES.map(lang => (
-            <label
+            <RadioOption
               key={lang.code}
-              className="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              selected={language === lang.code}
+              onClick={() => setLanguage(lang.code)}
             >
-              <input
-                type="radio"
-                name="language"
-                value={lang.code}
-                checked={language === lang.code}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-4 h-4 text-indigo-500"
-              />
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">{lang.name}</span>
-            </label>
+              {lang.name}
+            </RadioOption>
           ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <div className="flex items-center justify-between py-2">
         <div>
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.analyticsTitle')}</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings.analyticsDesc')}</p>
+          <p className="text-sm text-zinc-700 dark:text-zinc-300">{t('settings.analyticsTitle')}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">{t('settings.analyticsDesc')}</p>
         </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={analyticsEnabled}
-            onChange={(e) => {
-              const enabled = e.target.checked;
-              setAnalyticsEnabled(enabled);
-              analytics.setConsent(enabled);
-              showToast(enabled ? t('toast.analyticsEnabled') : t('toast.analyticsDisabled'), 'success');
-            }}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-500"></div>
-        </label>
+        <Toggle 
+          checked={analyticsEnabled} 
+          onChange={(enabled) => {
+            setAnalyticsEnabled(enabled);
+            analytics.setConsent(enabled);
+            showToast(enabled ? t('toast.analyticsEnabled') : t('toast.analyticsDisabled'), 'success');
+          }} 
+        />
       </div>
 
-      <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-          {t('settings.softwareUpdate')}
-        </label>
-        <div className="space-y-3">
-          {updateInfo?.downloaded ? (
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-                {t('settings.updateDownloaded', { version: updateInfo.version })}
-              </p>
-              <button
-                onClick={handleInstallUpdate}
-                className="w-full px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-              >
-                {t('settings.restartAndInstall')}
-              </button>
-            </div>
-          ) : (
+      <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
+        <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-3">{t('settings.softwareUpdate')}</p>
+        {updateInfo?.downloaded ? (
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg">
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-2">
+              {t('settings.updateDownloaded', { version: updateInfo.version })}
+            </p>
             <button
-              onClick={handleCheckUpdate}
-              disabled={checkingUpdate}
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleInstallUpdate}
+              className="w-full px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition-colors"
             >
-              <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
-              {checkingUpdate ? t('settings.checking') : t('settings.checkUpdate')}
+              {t('settings.restartAndInstall')}
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleCheckUpdate}
+            disabled={checkingUpdate}
+            className="w-full px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={checkingUpdate ? 'animate-spin' : ''} />
+            {checkingUpdate ? t('settings.checking') : t('settings.checkUpdate')}
+          </button>
+        )}
       </div>
     </div>
   );
 
   const renderShortcutsTab = () => (
-    <div className="space-y-4">
-      <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-          {t('settings.shortcutsHint')}
-        </p>
-        <div className="space-y-2">
-          {SHORTCUTS.map((shortcut, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between py-2 border-b border-zinc-200 dark:border-zinc-700 last:border-0"
-            >
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">{t(shortcut.descKey)}</span>
-              <kbd className="px-2 py-1 bg-white dark:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded text-xs font-mono text-zinc-700 dark:text-zinc-300">
-                {shortcut.key}
-              </kbd>
-            </div>
-          ))}
+    <div className="space-y-1">
+      {SHORTCUTS.map((shortcut, index) => (
+        <div
+          key={index}
+          className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors"
+        >
+          <span className="text-sm text-zinc-600 dark:text-zinc-400">{t(shortcut.descKey)}</span>
+          <kbd className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-[11px] font-mono text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+            {shortcut.key}
+          </kbd>
         </div>
-      </div>
+      ))}
     </div>
   );
 
   const renderAppearanceTab = () => (
-    <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-          {t('settings.theme')}
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => isDarkMode && toggleTheme()}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              !isDarkMode
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-            }`}
-          >
-            <div className="text-center">
-              <div className="w-12 h-8 bg-white border border-zinc-200 rounded mx-auto mb-2"></div>
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.themeLight')}</p>
-            </div>
-          </button>
-          <button
-            onClick={() => !isDarkMode && toggleTheme()}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              isDarkMode
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
-            }`}
-          >
-            <div className="text-center">
-              <div className="w-12 h-8 bg-zinc-800 border border-zinc-700 rounded mx-auto mb-2"></div>
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('settings.themeDark')}</p>
-            </div>
-          </button>
-        </div>
+    <div className="space-y-4">
+      <p className="text-xs text-zinc-500 dark:text-zinc-500">{t('settings.theme')}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => isDarkMode && toggleTheme()}
+          className={`
+            flex items-center gap-3 px-4 py-3 rounded-lg border transition-all
+            ${!isDarkMode
+              ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-white/5'
+              : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+            }
+          `}
+        >
+          <div className="w-6 h-6 rounded bg-zinc-100 border border-zinc-300" />
+          <span className="text-sm text-zinc-700 dark:text-zinc-300">{t('settings.themeLight')}</span>
+          {!isDarkMode && <Check size={14} className="ml-auto text-zinc-900 dark:text-zinc-100" />}
+        </button>
+        <button
+          onClick={() => !isDarkMode && toggleTheme()}
+          className={`
+            flex items-center gap-3 px-4 py-3 rounded-lg border transition-all
+            ${isDarkMode
+              ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-white/5'
+              : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+            }
+          `}
+        >
+          <div className="w-6 h-6 rounded bg-zinc-800 border border-zinc-700" />
+          <span className="text-sm text-zinc-700 dark:text-zinc-300">{t('settings.themeDark')}</span>
+          {isDarkMode && <Check size={14} className="ml-auto text-zinc-900 dark:text-zinc-100" />}
+        </button>
       </div>
     </div>
   );
@@ -408,74 +438,68 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
 
   const modalContent = (
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/10 backdrop-blur-sm"
-      style={{ 
-        zIndex: Z_INDEX.MODAL_BACKDROP,
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0
-      }}
+      className="fixed inset-0 flex items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-sm"
+      style={{ zIndex: Z_INDEX.MODAL_BACKDROP }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl mx-4 border border-zinc-200 dark:border-zinc-800 flex flex-col"
-        style={{ zIndex: Z_INDEX.MODAL_CONTENT, height: '600px', maxHeight: '90vh' }}
+        className="bg-white dark:bg-[#0c0c0e] rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-zinc-200 dark:border-white/10 overflow-hidden flex flex-col"
+        style={{ zIndex: Z_INDEX.MODAL_CONTENT, height: '580px' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{t('settings.title')}</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-white/5">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{t('settings.title')}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-1 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors"
           >
-            <X size={20} className="text-zinc-500" />
+            <X size={18} className="text-zinc-400" />
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-48 border-r border-zinc-200 dark:border-zinc-800 p-4 space-y-1 overflow-y-auto">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span>{t(tab.labelKey)}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            {renderContent()}
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-zinc-100 dark:border-white/5 px-5">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-3 py-3 text-xs font-medium border-b-2 -mb-px transition-colors
+                  ${activeTab === tab.id
+                    ? 'border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100'
+                    : 'border-transparent text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                  }
+                `}
+              >
+                <Icon size={14} />
+                {t(tab.labelKey)}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-3">
+        {/* Content */}
+        <div className="flex-1 p-5 overflow-y-auto">
+          {renderContent()}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-zinc-100 dark:border-white/5 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
           >
             {t('action.cancel')}
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
+            className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 rounded-lg text-xs font-medium transition-colors"
           >
-            <Save size={16} />
             {t('action.save')}
           </button>
         </div>
@@ -485,4 +509,3 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
 
   return createPortal(modalContent, document.body);
 };
-

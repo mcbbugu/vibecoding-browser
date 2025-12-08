@@ -94,7 +94,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
               type="text"
               value={formData.name}
               onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500"
               required
             />
           </div>
@@ -105,7 +105,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
               type="text"
               value={formData.url}
               onChange={e => setFormData(prev => ({ ...prev, url: e.target.value }))}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500"
               placeholder="http://localhost:3000"
               required
             />
@@ -119,7 +119,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
                   type="text"
                   value={formData.path}
                   onChange={e => setFormData(prev => ({ ...prev, path: e.target.value }))}
-                  className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent-500"
                   placeholder="~/dev/project"
                 />
                 <button
@@ -143,7 +143,7 @@ export const ProjectEditModal = ({ project, isOpen, onClose, onSave, projects = 
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center gap-2"
+              className="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg flex items-center gap-2"
             >
               <Save size={16} />
               {t('action.save')}

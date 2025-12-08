@@ -26,7 +26,7 @@ export const BrowserActions = ({
       <Tooltip message={isDevToolsOpen ? t('action.closeDevtools') : t('action.openDevtools')}>
         <button 
           onClick={onToggleDevTools}
-          className={`transition-colors p-1 rounded hover:bg-zinc-100 dark:hover:bg-white/5 ${isDevToolsOpen ? 'text-indigo-500 dark:text-indigo-400' : 'hover:text-zinc-800 dark:hover:text-zinc-200'}`}
+          className={`transition-colors p-1 rounded hover:bg-zinc-100 dark:hover:bg-white/5 ${isDevToolsOpen ? 'text-accent-500 dark:text-accent-400' : 'hover:text-zinc-800 dark:hover:text-zinc-200'}`}
         >
           <Bug size={16} />
         </button>

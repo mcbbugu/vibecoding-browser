@@ -26,7 +26,7 @@ const ProjectCard = React.memo(({ project, isHighlighted }) => {
       className={`
         flex flex-col rounded-xl bg-white dark:bg-[#0c0c0e] border p-3 transition-all duration-200 text-left w-[280px] shrink-0
         ${isHighlighted 
-          ? 'border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105 ring-2 ring-indigo-500/50' 
+          ? 'border-accent-500 shadow-lg shadow-accent-500/20 scale-105 ring-2 ring-accent-500/50' 
           : 'border-zinc-200 dark:border-white/5 opacity-60'
         }
       `}
@@ -37,7 +37,7 @@ const ProjectCard = React.memo(({ project, isHighlighted }) => {
             {isLoading && (
               <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center z-10">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-2 border-accent-500 border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs text-zinc-500 dark:text-zinc-400">{t('dashboard.previewLoading')}</span>
                 </div>
               </div>

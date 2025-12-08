@@ -86,16 +86,16 @@ export const SearchModal = ({ isOpen, onClose, projects, onSelectProject, onQuic
                 <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">{t('search.quickCreate')}</div>
                 <button
                   onClick={handleCreateNew}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl group transition-colors text-left border border-dashed border-indigo-300 dark:border-indigo-700"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-xl group transition-colors text-left border border-dashed border-accent-300 dark:border-accent-700"
                 >
-                  <div className="p-2 bg-indigo-500 rounded-lg">
+                  <div className="p-2 bg-accent-500 rounded-lg">
                     <Plus size={16} className="text-white" />
                   </div>
                   <div className="flex flex-col flex-1">
                     <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">{t('search.createAndOpen')}</span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">{query}</span>
                   </div>
-                  <CornerDownLeft size={16} className="text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-500 transition-colors" />
+                  <CornerDownLeft size={16} className="text-zinc-300 dark:text-zinc-600 group-hover:text-accent-500 transition-colors" />
                 </button>
               </div>
             )}

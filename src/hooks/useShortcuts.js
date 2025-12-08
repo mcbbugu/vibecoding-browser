@@ -18,6 +18,9 @@ export const useShortcuts = () => {
     getMRUProjects
   } = useApp();
   
+  const mruIndexRef = useRef(0);
+  const isCtrlHeldRef = useRef(false);
+  
 
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
 
@@ -143,11 +146,45 @@ export const useShortcuts = () => {
         return;
       }
 
+      // Ctrl+Tab MRU 切换
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        const mruProjects = getMRUProjects();
+        if (mruProjects.length < 2) return;
+        
+        if (!isCtrlHeldRef.current) {
+          isCtrlHeldRef.current = true;
+          mruIndexRef.current = 0;
+        }
+        
+        if (e.shiftKey) {
+          mruIndexRef.current = (mruIndexRef.current - 1 + mruProjects.length) % mruProjects.length;
+        } else {
+          mruIndexRef.current = (mruIndexRef.current + 1) % mruProjects.length;
+        }
+        
+        const nextProject = mruProjects[mruIndexRef.current];
+        if (nextProject) {
+          setActiveProjectId(nextProject.id);
+        }
+        return;
+      }
+    };
+    
+    const handleKeyUp = (e) => {
+      if (e.key === 'Control') {
+        isCtrlHeldRef.current = false;
+        mruIndexRef.current = 0;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [handleShortcutAction]);
+    window.addEventListener('keyup', handleKeyUp, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
+    };
+  }, [handleShortcutAction, getMRUProjects, setActiveProjectId]);
 
   useEffect(() => {
     if (!electronAPI.onGlobalShortcut) return undefined;

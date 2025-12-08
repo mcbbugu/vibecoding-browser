@@ -229,5 +229,5 @@ PostHog 默认会追踪 localhost，生产环境可以过滤。
 ---
 
 **需要帮助？**
-查看 PostHog 社区或创建 Issue。
+查看 PostHog 社区或创建 Issue。呃，现在我想让AI
 

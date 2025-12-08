@@ -309,10 +309,6 @@ function registerBrowserHandlers() {
               require('fs').writeFileSync(result.filePath, html, 'utf-8');
             }
           }},
-          { label: '查看网页源代码', click: () => {
-            const url = currentBrowserView.webContents.getURL();
-            if (url) currentBrowserView.webContents.loadURL(`view-source:${url}`);
-          }},
           { label: '检查元素', click: () => currentBrowserView.webContents.openDevTools() }
         );
         
@@ -658,22 +654,6 @@ function registerBrowserHandlers() {
     }
     try {
       currentBrowserView.webContents.selectAll();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  });
-
-  ipcMain.handle('browser-view-view-source', () => {
-    if (!currentBrowserView || currentBrowserView.webContents.isDestroyed()) {
-      return { success: false, error: 'BrowserView not found' };
-    }
-    try {
-      const url = currentBrowserView.webContents.getURL();
-      if (url && url !== 'about:blank') {
-        const viewSourceUrl = `view-source:${url}`;
-        currentBrowserView.webContents.loadURL(viewSourceUrl);
-      }
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

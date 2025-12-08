@@ -28,10 +28,10 @@ export const Toast = ({ toast, onClose }) => {
         };
       default: 
         return {
-          icon: <Info size={18} className="text-indigo-500" />,
-          bg: 'bg-indigo-50 dark:bg-indigo-950/50',
-          border: 'border-indigo-200 dark:border-indigo-800/50',
-          text: 'text-indigo-900 dark:text-indigo-100'
+          icon: <Info size={18} className="text-accent-500" />,
+          bg: 'bg-accent-50 dark:bg-accent-900/50',
+          border: 'border-accent-200 dark:border-accent-800/50',
+          text: 'text-accent-900 dark:text-accent-100'
         };
     }
   };

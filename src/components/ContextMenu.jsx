@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FolderOpen, Trash2, Code, Edit, Pin, PinOff } from 'lucide-react';
 import { Z_INDEX } from '../utils/constants';
 
-const MENU_BUTTON_CLASS = "flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-indigo-500 hover:text-white transition-colors mx-1 rounded-md";
+const MENU_BUTTON_CLASS = "flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-600 dark:text-zinc-300 hover:bg-accent-500 hover:text-white transition-colors mx-1 rounded-md";
 const MENU_BUTTON_DANGER_CLASS = "flex items-center gap-2 px-3 py-1.5 text-xs text-rose-500 hover:bg-rose-500 hover:text-white transition-colors mx-1 rounded-md";
 
 export const ContextMenu = ({ position, project, onClose, onAction, sidebarWidth }) => {
