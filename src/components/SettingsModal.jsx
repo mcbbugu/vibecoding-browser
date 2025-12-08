@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { storage } from '../utils/storage';
 import { Z_INDEX } from '../utils/constants';
 import analytics from '../utils/analytics';
+import logoDark from '../../assets/logo-dark.svg';
+import logoLight from '../../assets/logo-light.svg';
 
 const LANGUAGES = [
   { code: 'zh', name: '简体中文' },
@@ -19,6 +21,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
   const [language, setLanguage] = useState((i18n.language || 'zh').split('-')[0]);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
+  const [downloadProgress, setDownloadProgress] = useState(null);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [appVersion, setAppVersion] = useState('1.0.0');
 
@@ -32,6 +35,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     { key: '⌘F', descKey: 'shortcuts.pageSearch' },
     { key: '⌘[', descKey: 'shortcuts.back' },
     { key: '⌘]', descKey: 'shortcuts.forward' },
+    { key: '⌃Tab', descKey: 'shortcuts.switchTab' },
   ];
 
   const presetEditors = [
@@ -61,20 +65,29 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
 
     const cleanupAvailable = window.electronAPI.onUpdateAvailable((info) => {
       showToast(t('toast.updateAvailableToast', { version: info.version }), 'info');
+      setDownloadProgress({ percent: 0 });
+    });
+
+    const cleanupProgress = window.electronAPI.onDownloadProgress((progress) => {
+      setDownloadProgress(progress);
+      setCheckingUpdate(false);
     });
 
     const cleanupDownloaded = window.electronAPI.onUpdateDownloaded((info) => {
       setUpdateInfo({ downloaded: true, version: info.version });
+      setDownloadProgress(null);
       showToast(t('settings.updateDownloaded', { version: info.version }), 'success');
     });
 
     const cleanupError = window.electronAPI.onUpdateError((error) => {
       showToast(t('toast.updateCheckFailed', { error: error.error }), 'error');
       setCheckingUpdate(false);
+      setDownloadProgress(null);
     });
 
     return () => {
       cleanupAvailable();
+      cleanupProgress();
       cleanupDownloaded();
       cleanupError();
     };
@@ -119,7 +132,8 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
       const result = await window.electronAPI.checkForUpdates();
       if (result.success) {
         if (result.updateAvailable) {
-          showToast(t('settings.updateAvailable', { version: result.latestVersion }), 'info');
+          // 发现新版本，toast 提示已经在 onUpdateAvailable 回调中处理
+          // 这里不重置 checkingUpdate，等待下载开始
         } else {
           showToast(t('settings.latestVersion'), 'success');
           setCheckingUpdate(false);
@@ -202,8 +216,8 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
       
       <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
         <p className="text-xs text-amber-700 dark:text-amber-400 font-medium mb-1">{t('settings.editorSetupTitle')}</p>
-        <p className="text-xs text-amber-600 dark:text-amber-500 mb-2">{t('settings.editorSetupDesc', { editor: editorName })}</p>
-        <code className="block text-xs text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded font-mono">
+        <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">{t('settings.editorSetupDesc', { editor: editorName })}</p>
+        <code className="block text-xs text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded font-mono">
           {t('settings.editorSetupCommand', { command: editorCommand })}
         </code>
       </div>
@@ -300,9 +314,9 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
   const renderGeneralTab = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-4 pb-4 border-b border-zinc-100 dark:border-zinc-800/50">
-        <img 
-          src={isDarkMode ? "/assets/logo-dark.svg" : "/assets/logo-light.svg"} 
-          alt="DevDock" 
+        <img
+          src={isDarkMode ? logoDark : logoLight}
+          alt="DevDock"
           className="h-10 w-auto"
         />
         <div>
@@ -354,6 +368,18 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
             >
               {t('settings.restartAndInstall')}
             </button>
+          </div>
+        ) : downloadProgress ? (
+          <div className="p-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+            <p className="text-xs text-zinc-700 dark:text-zinc-300 mb-2">
+              {t('settings.downloading')} {Math.round(downloadProgress.percent)}%
+            </p>
+            <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-300"
+                style={{ width: `${downloadProgress.percent}%` }}
+              />
+            </div>
           </div>
         ) : (
           <button
@@ -446,7 +472,7 @@ export const SettingsModal = ({ isOpen, onClose, showToast, isDarkMode, toggleTh
     >
       <div 
         className="bg-white dark:bg-[#0c0c0e] rounded-xl shadow-2xl w-full max-w-lg mx-4 border border-zinc-200 dark:border-white/10 overflow-hidden flex flex-col"
-        style={{ zIndex: Z_INDEX.MODAL_CONTENT, height: '580px' }}
+        style={{ zIndex: Z_INDEX.MODAL_CONTENT, height: '600px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

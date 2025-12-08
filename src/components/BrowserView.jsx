@@ -94,6 +94,21 @@ export const BrowserView = ({
   }, [project?.id]);
 
   useEffect(() => {
+    const cleanupLoading = electronAPI.onBrowserViewLoading((loading) => {
+      setIsLoading(loading);
+    });
+    
+    const cleanupNavigate = electronAPI.onBrowserViewNavigate((navigationUrl) => {
+      setUrl(navigationUrl);
+    });
+    
+    return () => {
+      if (cleanupLoading) cleanupLoading();
+      if (cleanupNavigate) cleanupNavigate();
+    };
+  }, []);
+
+  useEffect(() => {
     const projectId = project?.id;
     const projectUrl = project?.url;
     const shouldLoad = project && canDisplayWebview && projectUrl;
@@ -115,18 +130,8 @@ export const BrowserView = ({
       
       const timer = setTimeout(updateBrowserView, 100);
       
-      const cleanupLoading = electronAPI.onBrowserViewLoading((loading) => {
-        setIsLoading(loading);
-      });
-      
-      const cleanupNavigate = electronAPI.onBrowserViewNavigate((navigationUrl) => {
-        setUrl(navigationUrl);
-      });
-      
       return () => {
         clearTimeout(timer);
-        if (cleanupLoading) cleanupLoading();
-        if (cleanupNavigate) cleanupNavigate();
       };
     } else if (!project || !canDisplayWebview) {
       if (electronAPI.isAvailable() && loadAttemptedRef.current) {
@@ -205,18 +210,15 @@ export const BrowserView = ({
   };
 
   const handleClearAllCache = async () => {
-    if (electronAPI.isAvailable()) {
-      setIsLoading(true);
-      const session = await electronAPI.browserViewClearCache();
-      if (session?.success) {
-        await electronAPI.browserViewClearStorage();
-      }
-      await handleElectronResult(
-        () => electronAPI.browserViewHardReload(),
-        showToast,
-        t('toast.cacheCleared')
-      );
-      setTimeout(() => setIsLoading(false), 1000);
+    if (!electronAPI.isAvailable() || !project || !canDisplayWebview) return;
+    
+    try {
+      await electronAPI.browserViewClearCache();
+      await electronAPI.browserViewClearStorage();
+      await electronAPI.browserViewHardReload();
+      showToast(t('toast.cacheCleared'), 'success');
+    } catch (error) {
+      console.error('Clear cache failed:', error);
     }
   };
 

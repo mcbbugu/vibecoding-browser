@@ -20,7 +20,7 @@ export const DeviceSelector = ({ selectedDevice, onSelectDevice }) => {
             onClick={() => onSelectDevice(device)}
             className={`p-1.5 rounded transition-colors ${
               isSelected 
-                ? 'bg-accent-500 text-white' 
+                ? 'bg-zinc-300 dark:bg-zinc-600 text-zinc-800 dark:text-zinc-100' 
                 : 'hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
             }`}
             title={device.name}

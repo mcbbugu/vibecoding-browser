@@ -103,6 +103,7 @@
     "checkUpdate": "Check for Updates",
     "checking": "Checking...",
     "updateAvailable": "New version {{version}} found",
+    "downloading": "Downloading",
     "updateDownloaded": "New version {{version}} downloaded",
     "latestVersion": "Already up to date",
     "updateFailed": "Update check failed",
@@ -117,7 +118,8 @@
     "toggleSidebar": "Hide Sidebar (double-click S)",
     "pageSearch": "Page Search",
     "back": "Go Back",
-    "forward": "Go Forward"
+    "forward": "Go Forward",
+    "switchTab": "Switch Project (MRU)"
   },
   "editModal": {
     "title": "Edit Project",

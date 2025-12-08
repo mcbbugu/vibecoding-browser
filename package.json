@@ -1,6 +1,6 @@
 {
   "name": "vibecoding-devdock",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Local Development Project Manager",
   "main": "electron/main.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "start": "npm run electron:dev",
     "adjust-icon": "node scripts/adjust-icon.js",
     "clean": "rm -rf dist/mac* dist/*.dmg* dist/*.icns release",
-    "package": "npm run clean && npm run adjust-icon && electron-builder --publish always"
+    "package": "npm run clean && npm run build && npm run adjust-icon && electron-builder --publish always",
+    "package:local": "npm run clean && npm run build && npm run adjust-icon && electron-builder"
   },
   "keywords": [],
   "author": "",
@@ -34,9 +35,11 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
+    "dotenv": "^17.2.3",
     "electron": "^28.3.3",
     "electron-builder": "^24.9.1",
     "electron-rebuild": "^3.2.9",
@@ -72,9 +75,10 @@
           ]
         }
       ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
-      "sign": false,
-      "gatekeeperAssess": false,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": true,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist"
     },

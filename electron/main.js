@@ -5,6 +5,10 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const Store = require('electron-store');
 const { autoUpdater } = require('electron-updater');
+
+// 配置 autoUpdater
+autoUpdater.autoDownload = true; // 发现更新后自动下载
+autoUpdater.autoInstallOnAppQuit = true; // 退出时自动安装
 const { scanPort, scanCommonPorts, scanDevelopmentPorts, scanAllPorts } = require('./services/port-scanner');
 const { startService, stopService, getRunningServices } = require('./services/process-manager');
 const { registerTerminalHandlers } = require('./ipc/terminal');
@@ -32,12 +36,14 @@ function registerGlobalShortcuts() {
     { accelerator: 'CommandOrControl+S', action: 'cmd-s' },
     { accelerator: 'CommandOrControl+F', action: 'find' },
     { accelerator: 'CommandOrControl+E', action: 'open-editor' },
-    { accelerator: 'CommandOrControl+Option+I', action: 'toggle-devtools' }
+    { accelerator: 'CommandOrControl+Option+I', action: 'toggle-devtools' },
+    { accelerator: 'Control+Tab', action: 'next-tab' },
+    { accelerator: 'Control+Shift+Tab', action: 'prev-tab' }
   ];
 
   shortcuts.forEach(({ accelerator, action }) => {
     const success = globalShortcut.register(accelerator, () => {
-      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) {
+      if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('global-shortcut', action);
       }
     });
@@ -445,12 +451,22 @@ ipcMain.handle('select-folder', async () => {
 ipcMain.handle('check-for-updates', async () => {
   try {
     const result = await autoUpdater.checkForUpdates();
-    return { 
-      success: true, 
-      updateAvailable: result.updateInfo.version !== app.getVersion(),
-      currentVersion: app.getVersion(),
-      latestVersion: result.updateInfo.version
-    };
+    if (result) {
+      const updateAvailable = result.updateInfo.version !== app.getVersion();
+      return { 
+        success: true, 
+        updateAvailable,
+        currentVersion: app.getVersion(),
+        latestVersion: result.updateInfo.version
+      };
+    } else {
+      return { 
+        success: true, 
+        updateAvailable: false,
+        currentVersion: app.getVersion(),
+        latestVersion: app.getVersion()
+      };
+    }
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -460,6 +476,16 @@ autoUpdater.on('update-available', (info) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('update-available', {
       version: info.version
+    });
+  }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('download-progress', {
+      percent: progressObj.percent,
+      transferred: progressObj.transferred,
+      total: progressObj.total
     });
   }
 });

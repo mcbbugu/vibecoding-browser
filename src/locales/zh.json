@@ -103,6 +103,7 @@
     "checkUpdate": "检查更新",
     "checking": "检查中...",
     "updateAvailable": "发现新版本 {{version}}",
+    "downloading": "下载中",
     "updateDownloaded": "新版本 {{version}} 下载完成",
     "latestVersion": "已是最新版本",
     "updateFailed": "检查更新失败",
@@ -117,7 +118,8 @@
     "toggleSidebar": "打开/关闭侧边栏（双击S）",
     "pageSearch": "页面搜索",
     "back": "后退",
-    "forward": "前进"
+    "forward": "前进",
+    "switchTab": "切换项目（最近使用）"
   },
   "editModal": {
     "title": "编辑项目",

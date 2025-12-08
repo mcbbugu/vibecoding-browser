@@ -15,11 +15,14 @@ export const useShortcuts = () => {
     handleCmdSPress,
     setIsFindBarOpen,
     setIsEditorConfigOpen,
-    getMRUProjects
+    getMRUProjects,
+    setSkipMRUUpdate,
+    updateMRU
   } = useApp();
   
   const mruIndexRef = useRef(0);
   const isCtrlHeldRef = useRef(false);
+  const mruSnapshotRef = useRef([]);
   
 
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
@@ -76,10 +79,47 @@ export const useShortcuts = () => {
           electronAPI.browserViewDevTools();
         }
         break;
+      case 'next-tab':
+      case 'prev-tab': {
+        const mruProjects = getMRUProjects();
+        if (mruProjects.length < 2) break;
+        
+        // 如果 snapshot 为空或无效，重新创建
+        if (!isCtrlHeldRef.current || mruSnapshotRef.current.length === 0) {
+          isCtrlHeldRef.current = true;
+          mruSnapshotRef.current = [...mruProjects];
+          mruIndexRef.current = 0;
+          setSkipMRUUpdate(true);
+        }
+        
+        const snapshot = mruSnapshotRef.current;
+        if (snapshot.length === 0) break;
+        
+        if (action === 'next-tab') {
+          mruIndexRef.current = (mruIndexRef.current + 1) % snapshot.length;
+        } else {
+          mruIndexRef.current = (mruIndexRef.current - 1 + snapshot.length) % snapshot.length;
+        }
+        const nextProject = snapshot[mruIndexRef.current];
+        if (nextProject) {
+          setActiveProjectId(nextProject.id);
+        }
+        break;
+      }
+      case 'ctrl-released': {
+        if (isCtrlHeldRef.current && activeProjectId) {
+          setSkipMRUUpdate(false);
+          updateMRU(activeProjectId);
+        }
+        isCtrlHeldRef.current = false;
+        mruIndexRef.current = 0;
+        mruSnapshotRef.current = [];
+        break;
+      }
       default:
         break;
     }
-  }, [activeProjectId, projects, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress, openEditor, t]);
+  }, [activeProjectId, projects, setIsSearchOpen, setActiveProjectId, showToast, handleCmdSPress, openEditor, t, getMRUProjects, setSkipMRUUpdate, updateMRU]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -172,9 +212,14 @@ export const useShortcuts = () => {
     };
     
     const handleKeyUp = (e) => {
-      if (e.key === 'Control') {
+      if (e.key === 'Control' || e.key === 'Meta') {
+        if (isCtrlHeldRef.current && activeProjectId) {
+          setSkipMRUUpdate(false);
+          updateMRU(activeProjectId);
+        }
         isCtrlHeldRef.current = false;
         mruIndexRef.current = 0;
+        mruSnapshotRef.current = [];
       }
     };
 
@@ -184,7 +229,7 @@ export const useShortcuts = () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
     };
-  }, [handleShortcutAction, getMRUProjects, setActiveProjectId]);
+  }, [handleShortcutAction, getMRUProjects, setActiveProjectId, activeProjectId, setSkipMRUUpdate, updateMRU]);
 
   useEffect(() => {
     if (!electronAPI.onGlobalShortcut) return undefined;

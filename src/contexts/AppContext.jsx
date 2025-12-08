@@ -37,6 +37,7 @@ export const AppProvider = ({ children }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const lastCmdSPressRef = React.useRef(0);
   const mruProjectIdsRef = React.useRef([]);
+  const skipMRUUpdateRef = React.useRef(false);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -112,10 +113,14 @@ export const AppProvider = ({ children }) => {
   }, [projects]);
 
   useEffect(() => {
-    if (activeProjectId) {
+    if (activeProjectId && !skipMRUUpdateRef.current) {
       updateMRU(activeProjectId);
     }
   }, [activeProjectId, updateMRU]);
+
+  const setSkipMRUUpdate = useCallback((skip) => {
+    skipMRUUpdateRef.current = skip;
+  }, []);
 
   const showToast = useCallback((message, type = 'info') => {
     setToast({ id: Date.now().toString(), message, type });
@@ -169,6 +174,7 @@ export const AppProvider = ({ children }) => {
     handleCmdSPress,
     getMRUProjects,
     updateMRU,
+    setSkipMRUUpdate,
     isTabSwitcherOpen,
     setIsTabSwitcherOpen,
     isFullScreen

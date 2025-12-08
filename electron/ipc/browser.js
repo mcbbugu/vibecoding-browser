@@ -184,6 +184,11 @@ function registerBrowserHandlers() {
         });
 
         view.webContents.on('before-input-event', (event, input) => {
+          if (input.type === 'keyUp' && (input.key === 'Control' || input.key === 'Meta')) {
+            mainWindow.webContents.send('global-shortcut', 'ctrl-released');
+            return;
+          }
+          
           if (input.type !== 'keyDown') return;
           
           const isCmdOrCtrl = input.meta || input.control;
@@ -195,6 +200,8 @@ function registerBrowserHandlers() {
             'r': 'reload',
             'l': 'focus-url',
             's': 'cmd-s',
+            'f': 'find',
+            'e': 'open-editor',
             '[': 'go-back',
             ']': 'go-forward'
           };
@@ -549,8 +556,8 @@ function registerBrowserHandlers() {
     
     try {
       const session = currentBrowserView.webContents.session;
-      await session.clearCache();
-      await session.clearStorageData();
+      session.clearCache();
+      session.clearStorageData();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

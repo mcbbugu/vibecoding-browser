@@ -15,6 +15,8 @@ import { useProjects } from './hooks/useProjects';
 import { useShortcuts } from './hooks/useShortcuts';
 import { useEditor } from './hooks/useEditor';
 import analytics, { trackAppLaunched, trackDailyActive } from './utils/analytics';
+import logoDark from '../assets/logo-dark.svg';
+import logoLight from '../assets/logo-light.svg';
 
 function App() {
   const {
@@ -92,6 +94,13 @@ function App() {
     handleReorderProjects
   } = useProjects();
 
+  // 启动时自动扫描端口，更新 pinned 项目的 status
+  useEffect(() => {
+    if (!isLoading) {
+      handleScanPorts('common');
+    }
+  }, [isLoading]);
+
   const { openEditor } = useEditor(showToast, setIsEditorConfigOpen);
 
   useShortcuts();
@@ -153,7 +162,14 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex w-screen h-screen items-center justify-center bg-zinc-50 dark:bg-[#09090b]">
-        <div className="text-zinc-500 dark:text-zinc-400">Loading...</div>
+        <div className="flex flex-col items-center gap-4">
+          <img 
+            src={isDarkMode ? logoDark : logoLight} 
+            alt="DevDock" 
+            className="h-12 w-auto"
+          />
+          <div className="w-6 h-6 border-2 border-zinc-300 dark:border-zinc-600 border-t-zinc-600 dark:border-t-zinc-300 rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
