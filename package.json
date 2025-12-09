@@ -1,6 +1,6 @@
 {
   "name": "vibecoding-devdock",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Local Development Project Manager",
   "main": "electron/main.js",
   "scripts": {
@@ -50,6 +50,7 @@
   "build": {
     "appId": "com.vibecoding.devdock",
     "productName": "DevDock",
+    "afterSign": "scripts/notarize.js",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -75,12 +76,12 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": true,
       "gatekeeperAssess": true,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": false
     },
     "publish": [
       {
